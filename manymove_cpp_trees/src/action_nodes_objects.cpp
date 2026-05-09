@@ -33,6 +33,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "manymove_cpp_trees/fault_codes.hpp"
 #include "manymove_cpp_trees/hmi_utils.hpp"
 
 namespace manymove_cpp_trees
@@ -161,6 +162,9 @@ BT::NodeStatus AddCollisionObjectAction::onRunning()
       RCLCPP_ERROR(
         node_->get_logger(), "%s: Failed to add object '%s'. Message: %s",
         kName, object_id_.c_str(), action_result_.message.c_str());
+      reportFault(
+        fault_codes::kObjectAddFailed, kSeverityError,
+        "add collision object '" + object_id_ + "' failed: " + action_result_.message);
       return BT::NodeStatus::FAILURE;
     }
   }
@@ -313,6 +317,9 @@ BT::NodeStatus RemoveCollisionObjectAction::onRunning()
         node_->get_logger(),
         "%s: Failed to remove object '%s'. Message: %s",
         kName, object_id_.c_str(), action_result_.message.c_str());
+      reportFault(
+        fault_codes::kObjectRemoveFailed, kSeverityError,
+        "remove collision object '" + object_id_ + "' failed: " + action_result_.message);
       return BT::NodeStatus::FAILURE;
     }
   }
@@ -495,6 +502,10 @@ BT::NodeStatus AttachDetachObjectAction::onRunning()
         "%s: Failed to %s object '%s' to link '%s'. Message: %s",
         kName, action.c_str(), object_id_.c_str(), link_name_.c_str(),
         action_result_.message.c_str());
+      reportFault(
+        fault_codes::kObjectAttachFailed, kSeverityError,
+        action + " object '" + object_id_ + "' to link '" + link_name_ + "' failed: " +
+        action_result_.message);
       return BT::NodeStatus::FAILURE;
     }
   }
@@ -872,6 +883,9 @@ BT::NodeStatus GetObjectPoseAction::onRunning()
         node_->get_logger(),
         "%s: Failed to retrieve pose for object '%s'. Message: %s",
         kName, object_id_.c_str(), action_result_.message.c_str());
+      reportFault(
+        fault_codes::kObjectGetPoseFailed, kSeverityError,
+        "GetObjectPose '" + object_id_ + "' failed: " + action_result_.message);
       return BT::NodeStatus::FAILURE;
     }
   }
@@ -1037,6 +1051,8 @@ BT::NodeStatus WaitForObjectAction::onRunning()
         node_->get_logger(),
         "%s: Condition met: object '%s' => exists=%s -> SUCCESS.",
         kName, object_id_.c_str(), (last_exists_ ? "true" : "false"));
+      // Pair: clear timeout filter once the wait condition is met.
+      reportFaultPassed(fault_codes::kObjectWaitTimeout);
       return BT::NodeStatus::SUCCESS;
     }
 
@@ -1052,6 +1068,10 @@ BT::NodeStatus WaitForObjectAction::onRunning()
           node_->get_logger(),
           "%s: Timeout (%.1f s) reached for object '%s' -> FAILURE.",
           kName, timeout_, object_id_.c_str());
+        reportFault(
+          fault_codes::kObjectWaitTimeout, kSeverityWarn,
+          "WaitForObject '" + object_id_ + "' timed out after " +
+          std::to_string(timeout_) + "s");
         return BT::NodeStatus::FAILURE;
       }
     }
