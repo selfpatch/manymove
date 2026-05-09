@@ -83,6 +83,8 @@ inline constexpr char kRobotResetFailed[]           = "MANYMOVE_ROBOT_RESET_FAIL
 // -- Logic / TF (action-side, not condition checks) -------------------------
 // GetLinkPoseAction tf2 lookup raised TransformException.
 inline constexpr char kTfLookupFailed[]             = "MANYMOVE_TF_LOOKUP_FAILED";
+// WaitForKeyBool elapsed without observing the expected blackboard value.
+inline constexpr char kWaitKeyTimeout[]             = "MANYMOVE_WAIT_KEY_TIMEOUT";
 
 // -- Gripper ----------------------------------------------------------------
 // GripperCommandAction goal aborted, canceled, or rejected.

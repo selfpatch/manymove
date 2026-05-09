@@ -30,6 +30,7 @@
 
 #include <behaviortree_cpp_v3/blackboard.h>
 
+#include "manymove_cpp_trees/fault_codes.hpp"
 #include "manymove_cpp_trees/hmi_utils.hpp"
 
 namespace manymove_cpp_trees
@@ -325,6 +326,8 @@ BT::NodeStatus WaitForKeyBool::onRunning()
     setHMIMessage(config().blackboard, prefix_, "", "grey");
 
     condition_met_ = true;
+    // Pair: clear timeout filter once the key matches.
+    reportFaultPassed(fault_codes::kWaitKeyTimeout);
     return BT::NodeStatus::SUCCESS;
   }
 
@@ -335,6 +338,11 @@ BT::NodeStatus WaitForKeyBool::onRunning()
       RCLCPP_WARN(
         node_->get_logger(), "[%s] Timeout after %.2f s => FAILURE. last_value='%s'",
         name().c_str(), elapsed, (actual_value ? "true" : "false"));
+      reportFault(
+        fault_codes::kWaitKeyTimeout, kSeverityWarn,
+        "WaitForKeyBool '" + key_ + "' timed out after " + std::to_string(elapsed) +
+        "s, expected=" + (expected_value_ ? "true" : "false") +
+        ", last=" + (actual_value ? "true" : "false"));
       return BT::NodeStatus::FAILURE;
     }
   }
@@ -407,6 +415,10 @@ BT::NodeStatus GetLinkPoseAction::tick()
       tf2::TimePointZero, tf2::durationFromSec(TF_TIMEOUT_SEC));
   } catch (const tf2::TransformException & ex) {
     RCLCPP_ERROR(node_->get_logger(), "[%s] TF error: %s", name().c_str(), ex.what());
+    reportFault(
+      fault_codes::kTfLookupFailed, kSeverityWarn,
+      std::string("TF lookup '") + link_name + "' -> '" +
+      (ref_frame.empty() ? "world" : ref_frame) + "': " + ex.what());
     return BT::NodeStatus::FAILURE;
   }
 
