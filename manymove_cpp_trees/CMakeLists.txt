@@ -183,6 +183,9 @@ if(BUILD_TESTING)
 
   manymove_cpp_trees_add_gtest(test_bt_integration
     test/test_bt_integration.cpp)
+
+  manymove_cpp_trees_add_gtest(test_fault_reporting
+    test/test_fault_reporting.cpp)
 endif()
 
 ament_package()
