@@ -29,7 +29,6 @@ find_package(std_srvs                 REQUIRED)
 find_package(manymove_msgs            REQUIRED)
 find_package(control_msgs             REQUIRED)
 find_package(std_msgs                 REQUIRED)
-find_package(topic_based_ros2_control REQUIRED)
 find_package(simulation_interfaces    REQUIRED)
 find_package(vision_msgs              REQUIRED)
 find_package(rcpputils                REQUIRED)
@@ -57,7 +56,7 @@ ament_target_dependencies(manymove_cpp_trees_lib
   rclcpp rclcpp_action behaviortree_cpp_v3
   manymove_planner manymove_object_manager
   trajectory_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs std_srvs manymove_msgs control_msgs
-  std_msgs topic_based_ros2_control simulation_interfaces vision_msgs rcpputils
+  std_msgs simulation_interfaces vision_msgs rcpputils
 )
 
 #--------------------------------------------------------------------
@@ -72,7 +71,7 @@ macro(bt_client_exec NAME)
     rclcpp rclcpp_action behaviortree_cpp_v3
     manymove_planner manymove_object_manager
     trajectory_msgs tf2 std_srvs manymove_msgs control_msgs
-    std_msgs topic_based_ros2_control simulation_interfaces rcpputils
+    std_msgs simulation_interfaces rcpputils
   )
 endmacro()
 
@@ -127,7 +126,7 @@ ament_export_dependencies(
   rclcpp rclcpp_action behaviortree_cpp_v3
   manymove_planner manymove_object_manager
   trajectory_msgs tf2 tf2_ros tf2_geometry_msgs std_srvs manymove_msgs control_msgs
-  std_msgs topic_based_ros2_control simulation_interfaces vision_msgs rcpputils
+  std_msgs simulation_interfaces vision_msgs rcpputils
 )
 
 if(BUILD_TESTING)
@@ -148,7 +147,7 @@ if(BUILD_TESTING)
         rclcpp rclcpp_action behaviortree_cpp_v3
         manymove_planner manymove_object_manager
         trajectory_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs std_srvs manymove_msgs control_msgs
-        std_msgs topic_based_ros2_control simulation_interfaces vision_msgs rcpputils)
+        std_msgs simulation_interfaces vision_msgs rcpputils)
     endif()
   endfunction()
 

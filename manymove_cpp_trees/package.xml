@@ -24,7 +24,6 @@
   <depend>manymove_msgs</depend>
   <depend>control_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>topic_based_ros2_control</depend>
   <depend>simulation_interfaces</depend>
   <depend>vision_msgs</depend>
   <depend>rcpputils</depend>
