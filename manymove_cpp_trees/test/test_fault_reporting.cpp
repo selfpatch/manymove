@@ -10,7 +10,7 @@
 //      notice, this list of conditions and the following disclaimer in the
 //      documentation and/or other materials provided with the distribution.
 //
-//    * Neither the name of Selfpatch.ai nor the names of its contributors
+//    * Neither the name of the Selfpatch.ai nor the names of its contributors
 //      may be used to endorse or promote products derived from this software
 //      without specific prior written permission.
 //
@@ -27,11 +27,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <gtest/gtest.h>
+#include <behaviortree_cpp_v3/blackboard.h>
 
 #include <chrono>
 #include <memory>
+#include <thread>
 
-#include <behaviortree_cpp_v3/blackboard.h>
 #include <rclcpp/rclcpp.hpp>
 #include <ros2_medkit_msgs/msg/fault.hpp>
 
@@ -113,7 +114,8 @@ TEST_F(FaultReportingFixture, MixinForwardsErrorReportToFakeManager)
 
   const auto received = fake_fm_->received();
   ASSERT_EQ(received.size(), 1u);
-  EXPECT_EQ(received.front().fault_code, manymove_cpp_trees::fault_codes::kPlannerCollisionDetected);
+  EXPECT_EQ(received.front().fault_code,
+    manymove_cpp_trees::fault_codes::kPlannerCollisionDetected);
   EXPECT_EQ(received.front().severity, ros2_medkit_msgs::msg::Fault::SEVERITY_ERROR);
   EXPECT_EQ(received.front().description, "test collision");
   EXPECT_EQ(received.front().source_id, std::string(bt_node_->get_fully_qualified_name()));

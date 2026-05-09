@@ -34,6 +34,7 @@
 #include <behaviortree_cpp_v3/decorators/force_failure_node.h>
 #include <behaviortree_cpp_v3/loggers/bt_zmq_publisher.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 

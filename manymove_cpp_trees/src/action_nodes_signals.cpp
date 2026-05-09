@@ -44,7 +44,8 @@ namespace manymove_cpp_trees
 // ------------------------------------------------------------------
 
 SetOutputAction::SetOutputAction(const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false),
+  result_received_(false)
 {
   // Obtain the ROS node from the blackboard
   if (!config.blackboard) {
@@ -194,7 +195,8 @@ void SetOutputAction::resultCallback(const GoalHandleSetOutput::WrappedResult & 
 // ------------------------------------------------------------------
 
 GetInputAction::GetInputAction(const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false),
+  result_received_(false)
 {
   if (!config.blackboard) {
     throw BT::RuntimeError("GetInputAction: no blackboard provided.");
@@ -338,7 +340,8 @@ void GetInputAction::resultCallback(const GoalHandleGetInput::WrappedResult & wr
 
 CheckRobotStateAction::CheckRobotStateAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false),
+  result_received_(false)
 {
   // Retrieve the ROS node from the blackboard
   if (!config.blackboard) {

@@ -10,7 +10,7 @@
 //      notice, this list of conditions and the following disclaimer in the
 //      documentation and/or other materials provided with the distribution.
 //
-//    * Neither the name of Selfpatch.ai nor the names of its contributors
+//    * Neither the name of the Selfpatch.ai nor the names of its contributors
 //      may be used to endorse or promote products derived from this software
 //      without specific prior written permission.
 //
@@ -26,12 +26,14 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef MANYMOVE_CPP_TREES__TEST__FAKE_FAULT_MANAGER_HPP_
-#define MANYMOVE_CPP_TREES__TEST__FAKE_FAULT_MANAGER_HPP_
+#ifndef FAKE_FAULT_MANAGER_HPP_
+#define FAKE_FAULT_MANAGER_HPP_
 
 #include <chrono>
+#include <memory>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
@@ -116,4 +118,4 @@ private:
 
 }  // namespace manymove_cpp_trees::test
 
-#endif  // MANYMOVE_CPP_TREES__TEST__FAKE_FAULT_MANAGER_HPP_
+#endif  // FAKE_FAULT_MANAGER_HPP_

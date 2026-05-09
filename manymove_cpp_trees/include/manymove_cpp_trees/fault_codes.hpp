@@ -10,7 +10,7 @@
 //      notice, this list of conditions and the following disclaimer in the
 //      documentation and/or other materials provided with the distribution.
 //
-//    * Neither the name of Selfpatch.ai nor the names of its contributors
+//    * Neither the name of the Selfpatch.ai nor the names of its contributors
 //      may be used to endorse or promote products derived from this software
 //      without specific prior written permission.
 //
@@ -44,57 +44,57 @@ namespace manymove_cpp_trees::fault_codes
 
 // -- Planner ----------------------------------------------------------------
 // Collision detected when entering a move (action_nodes_planner.cpp onStart).
-inline constexpr char kPlannerCollisionDetected[]   = "MANYMOVE_PLANNER_COLLISION_DETECTED";
+inline constexpr char kPlannerCollisionDetected[] = "MANYMOVE_PLANNER_COLLISION_DETECTED";
 // One retry of a move sequence failed; the move may still succeed.
-inline constexpr char kPlannerRetryAttempt[]        = "MANYMOVE_PLANNER_RETRY_ATTEMPT";
+inline constexpr char kPlannerRetryAttempt[] = "MANYMOVE_PLANNER_RETRY_ATTEMPT";
 // All retries exhausted, motion aborted.
-inline constexpr char kPlannerRetriesExhausted[]    = "MANYMOVE_PLANNER_RETRIES_EXHAUSTED";
+inline constexpr char kPlannerRetriesExhausted[] = "MANYMOVE_PLANNER_RETRIES_EXHAUSTED";
 // External e-stop / stop_execution flag triggered while motion was running.
-inline constexpr char kPlannerEstopTriggered[]      = "MANYMOVE_PLANNER_ESTOP_TRIGGERED";
+inline constexpr char kPlannerEstopTriggered[] = "MANYMOVE_PLANNER_ESTOP_TRIGGERED";
 // Required move_id input missing on the BT node.
-inline constexpr char kPlannerMissingMoveId[]       = "MANYMOVE_PLANNER_MISSING_MOVE_ID";
+inline constexpr char kPlannerMissingMoveId[] = "MANYMOVE_PLANNER_MISSING_MOVE_ID";
 
 // -- Object manager ---------------------------------------------------------
 // AddCollisionObject action returned failure (planning scene reject).
-inline constexpr char kObjectAddFailed[]            = "MANYMOVE_OBJECT_ADD_FAILED";
+inline constexpr char kObjectAddFailed[] = "MANYMOVE_OBJECT_ADD_FAILED";
 // RemoveCollisionObject action returned failure.
-inline constexpr char kObjectRemoveFailed[]         = "MANYMOVE_OBJECT_REMOVE_FAILED";
+inline constexpr char kObjectRemoveFailed[] = "MANYMOVE_OBJECT_REMOVE_FAILED";
 // AttachDetachObject action returned failure (link not found, attach reject).
-inline constexpr char kObjectAttachFailed[]         = "MANYMOVE_OBJECT_ATTACH_FAILED";
+inline constexpr char kObjectAttachFailed[] = "MANYMOVE_OBJECT_ATTACH_FAILED";
 // GetObjectPose action returned failure or the object is not in the scene.
-inline constexpr char kObjectGetPoseFailed[]        = "MANYMOVE_OBJECT_GET_POSE_FAILED";
+inline constexpr char kObjectGetPoseFailed[] = "MANYMOVE_OBJECT_GET_POSE_FAILED";
 // WaitForObject elapsed without the expected object presence/absence.
-inline constexpr char kObjectWaitTimeout[]          = "MANYMOVE_OBJECT_WAIT_TIMEOUT";
+inline constexpr char kObjectWaitTimeout[] = "MANYMOVE_OBJECT_WAIT_TIMEOUT";
 // CheckObjectExists action errored out (different from a clean negative).
-inline constexpr char kObjectExistsCheckFailed[]    = "MANYMOVE_OBJECT_EXISTS_CHECK_FAILED";
+inline constexpr char kObjectExistsCheckFailed[] = "MANYMOVE_OBJECT_EXISTS_CHECK_FAILED";
 
 // -- Signals (gripper, IO, robot state) -------------------------------------
 // SetOutputAction returned a failed result from the action server.
-inline constexpr char kSignalSetOutputFailed[]      = "MANYMOVE_SIGNAL_SET_OUTPUT_FAILED";
+inline constexpr char kSignalSetOutputFailed[] = "MANYMOVE_SIGNAL_SET_OUTPUT_FAILED";
 // GetInputAction returned a failed result from the action server.
-inline constexpr char kSignalGetInputFailed[]       = "MANYMOVE_SIGNAL_GET_INPUT_FAILED";
+inline constexpr char kSignalGetInputFailed[] = "MANYMOVE_SIGNAL_GET_INPUT_FAILED";
 // WaitForInputAction elapsed without observing the desired input value.
-inline constexpr char kSignalWaitInputTimeout[]     = "MANYMOVE_SIGNAL_WAIT_INPUT_TIMEOUT";
+inline constexpr char kSignalWaitInputTimeout[] = "MANYMOVE_SIGNAL_WAIT_INPUT_TIMEOUT";
 // CheckRobotStateAction reported the robot is not ready (err / mode mismatch).
-inline constexpr char kRobotNotReady[]              = "MANYMOVE_ROBOT_NOT_READY";
+inline constexpr char kRobotNotReady[] = "MANYMOVE_ROBOT_NOT_READY";
 // ResetRobotStateAction failed (controller unload / state reset / load step).
-inline constexpr char kRobotResetFailed[]           = "MANYMOVE_ROBOT_RESET_FAILED";
+inline constexpr char kRobotResetFailed[] = "MANYMOVE_ROBOT_RESET_FAILED";
 
 // -- Logic / TF (action-side, not condition checks) -------------------------
 // GetLinkPoseAction tf2 lookup raised TransformException.
-inline constexpr char kTfLookupFailed[]             = "MANYMOVE_TF_LOOKUP_FAILED";
+inline constexpr char kTfLookupFailed[] = "MANYMOVE_TF_LOOKUP_FAILED";
 // WaitForKeyBool elapsed without observing the expected blackboard value.
-inline constexpr char kWaitKeyTimeout[]             = "MANYMOVE_WAIT_KEY_TIMEOUT";
+inline constexpr char kWaitKeyTimeout[] = "MANYMOVE_WAIT_KEY_TIMEOUT";
 
 // -- Gripper ----------------------------------------------------------------
 // GripperCommandAction goal aborted, canceled, or rejected.
-inline constexpr char kGripperCommandFailed[]       = "MANYMOVE_GRIPPER_COMMAND_FAILED";
+inline constexpr char kGripperCommandFailed[] = "MANYMOVE_GRIPPER_COMMAND_FAILED";
 // GripperTrajAction trajectory execution failed.
-inline constexpr char kGripperTrajFailed[]          = "MANYMOVE_GRIPPER_TRAJ_FAILED";
+inline constexpr char kGripperTrajFailed[] = "MANYMOVE_GRIPPER_TRAJ_FAILED";
 
 // -- Isaac Sim integration --------------------------------------------------
 // FoundationPoseAlignmentNode could not lock onto a valid pose in time.
-inline constexpr char kIsaacFoundationPoseFailed[]  = "MANYMOVE_ISAAC_FOUNDATION_POSE_FAILED";
+inline constexpr char kIsaacFoundationPoseFailed[] = "MANYMOVE_ISAAC_FOUNDATION_POSE_FAILED";
 
 }  // namespace manymove_cpp_trees::fault_codes
 

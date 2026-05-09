@@ -9,7 +9,18 @@ high-level history.
 Forthcoming
 -----------
 
-- TBD.
+- ``manymove_cpp_trees``: rename every BT executable's ROS node to match the
+  binary name (``bt_client_xarm7``, ``bt_client_ur``, etc.) so source IDs are
+  distinct on the ROS graph instead of all sharing ``bt_client_node``.
+- ``manymove_cpp_trees``: hard dependency on ``ros2_medkit_fault_reporter``
+  and ``ros2_medkit_msgs``. BT action nodes inherit a small ``FaultReporting``
+  capability class and emit ``MANYMOVE_*`` fault codes on operational
+  failures (collision, retry, robot-not-ready, IO failures, TF lookups,
+  wait timeouts, FoundationPose timeouts). Catalogue in
+  ``docs/FAULT_CODES.md``. Vanilla manymove users should stay on
+  ``pastoriomarco/manymove``.
+- ``manymove_cpp_trees``: drop unused ``topic_based_ros2_control`` declaration
+  (still legitimately required by ``manymove_bringup``).
 
 0.3.2 (2025-12-03)
 ------------------

@@ -10,7 +10,7 @@
 //      notice, this list of conditions and the following disclaimer in the
 //      documentation and/or other materials provided with the distribution.
 //
-//    * Neither the name of Selfpatch.ai nor the names of its contributors
+//    * Neither the name of the Selfpatch.ai nor the names of its contributors
 //      may be used to endorse or promote products derived from this software
 //      without specific prior written permission.
 //
@@ -29,10 +29,11 @@
 #ifndef MANYMOVE_CPP_TREES__FAULT_REPORTING_HPP_
 #define MANYMOVE_CPP_TREES__FAULT_REPORTING_HPP_
 
+#include <behaviortree_cpp_v3/blackboard.h>
+
 #include <memory>
 #include <string>
 
-#include <behaviortree_cpp_v3/blackboard.h>
 #include <ros2_medkit_fault_reporter/fault_reporter.hpp>
 #include <ros2_medkit_msgs/msg/fault.hpp>
 
@@ -47,9 +48,9 @@ inline constexpr char kFaultReporterBlackboardKey[] = "fault_reporter";
 // Severity aliases that mirror ros2_medkit_msgs::msg::Fault::SEVERITY_*. Kept
 // here as a header-local convenience so call sites do not have to spell out
 // the verbose qualified constants on every reportFault() invocation.
-inline constexpr uint8_t kSeverityInfo     = ros2_medkit_msgs::msg::Fault::SEVERITY_INFO;
-inline constexpr uint8_t kSeverityWarn     = ros2_medkit_msgs::msg::Fault::SEVERITY_WARN;
-inline constexpr uint8_t kSeverityError    = ros2_medkit_msgs::msg::Fault::SEVERITY_ERROR;
+inline constexpr uint8_t kSeverityInfo = ros2_medkit_msgs::msg::Fault::SEVERITY_INFO;
+inline constexpr uint8_t kSeverityWarn = ros2_medkit_msgs::msg::Fault::SEVERITY_WARN;
+inline constexpr uint8_t kSeverityError = ros2_medkit_msgs::msg::Fault::SEVERITY_ERROR;
 inline constexpr uint8_t kSeverityCritical = ros2_medkit_msgs::msg::Fault::SEVERITY_CRITICAL;
 
 // Capability class that gives a BT action node one-line access to the

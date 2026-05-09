@@ -211,7 +211,8 @@ void GripperCommandAction::feedbackCallback(
 // -------------------------------------------------
 
 GripperTrajAction::GripperTrajAction(const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false), result_received_(false), success_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false),
+  result_received_(false), success_(false)
 {
   // Grab the node handle from blackboard
   if (!config.blackboard) {
