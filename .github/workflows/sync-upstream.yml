@@ -1,0 +1,67 @@
+name: Sync with upstream
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "selfpatch-sync-bot"
+          git config user.email "noreply@selfpatch.ai"
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/pastoriomarco/manymove.git
+          git fetch upstream main
+
+      - name: Check divergence
+        id: check
+        run: |
+          BEHIND=$(git rev-list --count main..upstream/main)
+          echo "behind=$BEHIND" >> $GITHUB_OUTPUT
+          if [ "$BEHIND" = "0" ]; then
+            echo "main is up to date with upstream"
+          else
+            echo "main is behind upstream by $BEHIND commits"
+          fi
+
+      - name: Push sync branch and open PR
+        if: steps.check.outputs.behind != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          BRANCH="sync/upstream-${DATE}"
+          BEHIND="${{ steps.check.outputs.behind }}"
+
+          git checkout -b "$BRANCH" upstream/main
+          git push -f origin "$BRANCH"
+
+          EXISTING=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' || echo "")
+          if [ -z "$EXISTING" ]; then
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "Sync upstream pastoriomarco/manymove (${DATE})" \
+              --body "Automated upstream sync. Behind by ${BEHIND} commits.
+
+          Diff: https://github.com/pastoriomarco/manymove/compare/${GITHUB_SHA}...upstream/main
+
+          Review and merge if nothing breaks our integration points."
+          else
+            echo "PR #${EXISTING} already exists for ${BRANCH}"
+          fi
