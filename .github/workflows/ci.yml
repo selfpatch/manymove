@@ -63,6 +63,10 @@ jobs:
             ccache \
             ros-$ROS_DISTRO-topic-based-ros2-control \
             python3-colcon-common-extensions python3-rosdep git \
+            ros-$ROS_DISTRO-ros2-medkit-fault-reporter \
+            ros-$ROS_DISTRO-ros2-medkit-msgs \
+            ros-$ROS_DISTRO-ros2-medkit-fault-manager \
+            ros-$ROS_DISTRO-ros2-medkit-cmake \
             ros-$ROS_DISTRO-moveit \
             ros-$ROS_DISTRO-ur \
             ros-$ROS_DISTRO-ur-moveit-config \
