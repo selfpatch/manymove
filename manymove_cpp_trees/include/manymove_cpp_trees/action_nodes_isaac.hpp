@@ -50,6 +50,8 @@
 
 #include "rcpputils/thread_safety_annotations.hpp"
 
+#include "manymove_cpp_trees/fault_reporting.hpp"
+
 namespace manymove_cpp_trees
 {
 
@@ -80,7 +82,7 @@ namespace manymove_cpp_trees
  * warnings).
  * - FAILS if the required blackboard keys are not provided or if the service returns an error.
  */
-class GetEntityPoseNode : public BT::StatefulActionNode
+class GetEntityPoseNode : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using GetEntityState = simulation_interfaces::srv::GetEntityState;
@@ -143,7 +145,7 @@ private:
  * warnings).
  * - FAILS if the required blackboard keys are missing, or the service returns an error.
  */
-class SetEntityPoseNode : public BT::StatefulActionNode
+class SetEntityPoseNode : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using SetEntityState = simulation_interfaces::srv::SetEntityState;
@@ -256,7 +258,7 @@ geometry_msgs::msg::Pose align_foundationpose_orientation(
  * - FAILS if no valid detection arrives within timeout, or if TF transform to alignment/planning
  * frames times out.
  */
-class FoundationPoseAlignmentNode : public BT::StatefulActionNode
+class FoundationPoseAlignmentNode : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using DetectionArray = vision_msgs::msg::Detection3DArray;

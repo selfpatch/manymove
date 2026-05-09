@@ -43,6 +43,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
+#include "manymove_cpp_trees/fault_reporting.hpp"
+
 
 namespace manymove_cpp_trees
 {
@@ -154,7 +156,7 @@ public:
  *   - "timeout" (double) : seconds, 0 => infinite
  *   - "poll_rate" (double) : frequency in s
  */
-class WaitForKeyBool : public BT::StatefulActionNode
+class WaitForKeyBool : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   WaitForKeyBool(const std::string & name, const BT::NodeConfiguration & config);
@@ -207,7 +209,7 @@ private:
  *  OUTPUT PORTS
  *    - pose             (geometry_msgs::msg::Pose)  Resulting pose
  */
-class GetLinkPoseAction : public BT::SyncActionNode
+class GetLinkPoseAction : public BT::SyncActionNode, public FaultReporting
 {
 public:
   GetLinkPoseAction(const std::string & name, const BT::NodeConfiguration & cfg);

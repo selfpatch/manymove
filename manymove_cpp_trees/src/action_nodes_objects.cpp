@@ -41,7 +41,7 @@ namespace manymove_cpp_trees
 
 AddCollisionObjectAction::AddCollisionObjectAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false), result_received_(false)
 {
   static constexpr const char * kName = "AddCollisionObjectAction";
 
@@ -234,7 +234,7 @@ void AddCollisionObjectAction::resultCallback(
 
 RemoveCollisionObjectAction::RemoveCollisionObjectAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false), result_received_(false)
 {
   static constexpr const char * kName = "RemoveCollisionObjectAction";
 
@@ -388,7 +388,7 @@ void RemoveCollisionObjectAction::resultCallback(
 
 AttachDetachObjectAction::AttachDetachObjectAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config),
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard),
   goal_sent_(false),
   result_received_(false),
   attach_(true)  // Default to attach
@@ -569,7 +569,7 @@ void AttachDetachObjectAction::resultCallback(
 
 CheckObjectExistsAction::CheckObjectExistsAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false), result_received_(false)
 {
   static constexpr const char * kName = "CheckObjectExistsAction";
 
@@ -723,7 +723,7 @@ void CheckObjectExistsAction::resultCallback(
 
 GetObjectPoseAction::GetObjectPoseAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false), result_received_(false)
 {
   static constexpr const char * kName = "GetObjectPoseAction";
 
@@ -940,7 +940,7 @@ void GetObjectPoseAction::resultCallback(
 
 WaitForObjectAction::WaitForObjectAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config),
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard),
   goal_sent_(false),
   result_received_(false),
   last_exists_(false),

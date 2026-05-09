@@ -42,7 +42,7 @@ namespace manymove_cpp_trees
 // -------------------------------------------------
 GripperCommandAction::GripperCommandAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config),
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard),
   goal_sent_(false),
   result_received_(false),
   server_ready_(false),
@@ -201,7 +201,7 @@ void GripperCommandAction::feedbackCallback(
 // -------------------------------------------------
 
 GripperTrajAction::GripperTrajAction(const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), goal_sent_(false), result_received_(false), success_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false), result_received_(false), success_(false)
 {
   // Grab the node handle from blackboard
   if (!config.blackboard) {
@@ -318,7 +318,7 @@ void GripperTrajAction::resultCallback(
 
 PublishJointStateAction::PublishJointStateAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::SyncActionNode(name, config)
+: BT::SyncActionNode(name, config), FaultReporting(config.blackboard)
 {
   if (!config.blackboard || !config.blackboard->get("node", node_)) {
     throw BT::RuntimeError("PublishJointStateAction: 'node' not found in blackboard.");

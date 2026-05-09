@@ -60,7 +60,7 @@ namespace manymove_cpp_trees
 // GetEntityPoseNode
 // ======================================================================
 GetEntityPoseNode::GetEntityPoseNode(const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard)
 {
   if (!config.blackboard || !config.blackboard->get("node", node_) || !node_) {
     throw BT::RuntimeError("GetEntityPoseNode: missing 'node' in blackboard");
@@ -162,7 +162,7 @@ void GetEntityPoseNode::onHalted()
 // SetEntityPoseNode
 // ======================================================================
 SetEntityPoseNode::SetEntityPoseNode(const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard)
 {
   if (!config.blackboard || !config.blackboard->get("node", node_) || !node_) {
     throw BT::RuntimeError("SetEntityPoseNode: missing 'node' in blackboard");
@@ -392,7 +392,7 @@ geometry_msgs::msg::Pose align_foundationpose_orientation(
 
 FoundationPoseAlignmentNode::FoundationPoseAlignmentNode(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard)
 {
   if (!config.blackboard || !config.blackboard->get("node", node_) || !node_) {
     throw BT::RuntimeError("FoundationPoseAlignmentNode: missing 'node' in blackboard");
