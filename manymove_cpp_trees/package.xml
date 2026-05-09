@@ -27,6 +27,8 @@
   <depend>simulation_interfaces</depend>
   <depend>vision_msgs</depend>
   <depend>rcpputils</depend>
+  <depend>ros2_medkit_fault_reporter</depend>
+  <depend>ros2_medkit_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

@@ -32,6 +32,8 @@ find_package(std_msgs                 REQUIRED)
 find_package(simulation_interfaces    REQUIRED)
 find_package(vision_msgs              REQUIRED)
 find_package(rcpputils                REQUIRED)
+find_package(ros2_medkit_fault_reporter REQUIRED)
+find_package(ros2_medkit_msgs         REQUIRED)
 
 #--------------------------------------------------------------------
 # Library with all BT helper nodes
@@ -57,6 +59,7 @@ ament_target_dependencies(manymove_cpp_trees_lib
   manymove_planner manymove_object_manager
   trajectory_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs std_srvs manymove_msgs control_msgs
   std_msgs simulation_interfaces vision_msgs rcpputils
+  ros2_medkit_fault_reporter ros2_medkit_msgs
 )
 
 #--------------------------------------------------------------------
@@ -72,6 +75,7 @@ macro(bt_client_exec NAME)
     manymove_planner manymove_object_manager
     trajectory_msgs tf2 std_srvs manymove_msgs control_msgs
     std_msgs simulation_interfaces rcpputils
+    ros2_medkit_fault_reporter ros2_medkit_msgs
   )
 endmacro()
 
@@ -127,6 +131,7 @@ ament_export_dependencies(
   manymove_planner manymove_object_manager
   trajectory_msgs tf2 tf2_ros tf2_geometry_msgs std_srvs manymove_msgs control_msgs
   std_msgs simulation_interfaces vision_msgs rcpputils
+  ros2_medkit_fault_reporter ros2_medkit_msgs
 )
 
 if(BUILD_TESTING)
@@ -147,7 +152,8 @@ if(BUILD_TESTING)
         rclcpp rclcpp_action behaviortree_cpp_v3
         manymove_planner manymove_object_manager
         trajectory_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs std_srvs manymove_msgs control_msgs
-        std_msgs simulation_interfaces vision_msgs rcpputils)
+        std_msgs simulation_interfaces vision_msgs rcpputils
+        ros2_medkit_fault_reporter ros2_medkit_msgs)
     endif()
   endfunction()
 
