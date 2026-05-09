@@ -33,6 +33,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "manymove_cpp_trees/fault_codes.hpp"
 #include "manymove_cpp_trees/hmi_utils.hpp"
 
 namespace manymove_cpp_trees
@@ -143,6 +144,10 @@ BT::NodeStatus SetOutputAction::onRunning()
       config().blackboard, prefix_,
       "SETTING OUTPUT " + std::to_string(ionum_) + " OF " + io_type_ + " FAILED!", "red");
 
+    reportFault(
+      fault_codes::kSignalSetOutputFailed, kSeverityError,
+      "SetOutput " + io_type_ + "[" + std::to_string(ionum_) + "] failed: " +
+      action_result_.message);
     return BT::NodeStatus::FAILURE;
   }
 }
@@ -285,6 +290,10 @@ BT::NodeStatus GetInputAction::onRunning()
       config().blackboard, prefix_,
       "READING INPUT " + std::to_string(ionum_) + " OF " + io_type_ + " FAILED!", "green");
 
+    reportFault(
+      fault_codes::kSignalGetInputFailed, kSeverityError,
+      "GetInput " + io_type_ + "[" + std::to_string(ionum_) + "] failed: " +
+      action_result_.message);
     return BT::NodeStatus::FAILURE;
   }
 }
@@ -401,6 +410,8 @@ BT::NodeStatus CheckRobotStateAction::onRunning()
     RCLCPP_INFO(
       node_->get_logger(), "CheckRobotStateAction [%s]: Robot is READY. (mode=%d, state=%d)",
       name().c_str(), action_result_.mode, action_result_.state);
+    // Pair: clear NOT_READY filter once robot recovers.
+    reportFaultPassed(fault_codes::kRobotNotReady);
     return BT::NodeStatus::SUCCESS;
   } else {
     RCLCPP_WARN(
@@ -408,6 +419,12 @@ BT::NodeStatus CheckRobotStateAction::onRunning()
       "CheckRobotStateAction [%s]: Robot is NOT ready => err=%d, mode=%d, state=%d. Msg=%s",
       name().c_str(), action_result_.err, action_result_.mode, action_result_.state,
       action_result_.message.c_str());
+    reportFault(
+      fault_codes::kRobotNotReady, kSeverityCritical,
+      "robot not ready: err=" + std::to_string(action_result_.err) +
+      ", mode=" + std::to_string(action_result_.mode) +
+      ", state=" + std::to_string(action_result_.state) +
+      ", msg=" + action_result_.message);
     return BT::NodeStatus::FAILURE;
   }
 }
@@ -762,6 +779,9 @@ BT::NodeStatus WaitForInputAction::onStart()
       RCLCPP_ERROR(
         node_->get_logger(), "[%s] server '%s' not available.", name().c_str(),
         server_name.c_str());
+      reportFault(
+        fault_codes::kSignalGetInputFailed, kSeverityError,
+        "WaitForInput server '" + server_name + "' not available within 5s");
       return BT::NodeStatus::FAILURE;
     }
   }
@@ -804,6 +824,8 @@ BT::NodeStatus WaitForInputAction::onRunning()
         std::to_string(desired_value_),
         "green");
 
+      // Pair: clear timeout filter once the desired value is observed.
+      reportFaultPassed(fault_codes::kSignalWaitInputTimeout);
       return BT::NodeStatus::SUCCESS;
     }
 
@@ -819,6 +841,10 @@ BT::NodeStatus WaitForInputAction::onRunning()
           config().blackboard, prefix_,
           "WAIT INPUT " + std::to_string(ionum_) + " OF " + io_type_ + " TIMED OUT", "red");
 
+        reportFault(
+          fault_codes::kSignalWaitInputTimeout, kSeverityWarn,
+          "WaitForInput " + io_type_ + "[" + std::to_string(ionum_) + "] timed out after " +
+          std::to_string(timeout_) + "s, last_value=" + std::to_string(last_value_));
         return BT::NodeStatus::FAILURE;
       }
     }
