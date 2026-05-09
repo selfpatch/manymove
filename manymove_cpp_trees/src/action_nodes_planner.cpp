@@ -33,6 +33,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "manymove_cpp_trees/fault_codes.hpp"
 #include "manymove_cpp_trees/hmi_utils.hpp"
 
 namespace manymove_cpp_trees
@@ -106,6 +107,9 @@ BT::NodeStatus MoveManipulatorAction::onStart()
     config().blackboard->set(robot_prefix_ + "collision_detected", false);
     config().blackboard->set(robot_prefix_ + "stop_execution", true);
 
+    reportFault(
+      fault_codes::kPlannerCollisionDetected, kSeverityError,
+      "collision detected on " + robot_prefix_ + " before motion start");
     return BT::NodeStatus::FAILURE;
   }
 
@@ -129,6 +133,9 @@ BT::NodeStatus MoveManipulatorAction::onStart()
     // HMI message
     setHMIMessage(config().blackboard, robot_prefix_, "WAITING FOR EXECUTION START", "yellow");
 
+    reportFault(
+      fault_codes::kPlannerEstopTriggered, kSeverityCritical,
+      "stop_execution flag set on " + robot_prefix_ + " before motion start");
     return BT::NodeStatus::FAILURE;
   }
 
@@ -220,11 +227,20 @@ BT::NodeStatus MoveManipulatorAction::onRunning()
       setHMIMessage(config().blackboard, robot_prefix_, "", "grey");
 
       RCLCPP_INFO(node_->get_logger(), "[MoveManipulatorAction] success => returning SUCCESS");
+      // Heal the per-attempt soft fault if any retry was reported earlier.
+      reportFaultPassed(fault_codes::kPlannerRetryAttempt);
       return BT::NodeStatus::SUCCESS;
     } else {
       config().blackboard->set("trajectory_" + move_id_, trajectory_msgs::msg::JointTrajectory());
 
       current_try_++;
+
+      // Every failed attempt is a soft fault; medkit's LocalFilter throttles
+      // these locally and only forwards to FaultManager once the threshold is
+      // crossed within its window.
+      reportFault(
+        fault_codes::kPlannerRetryAttempt, kSeverityWarn,
+        "attempt " + std::to_string(current_try_) + " failed: " + action_result_.message);
 
       if (max_tries_ != -1 && current_try_ >= max_tries_) {
         RCLCPP_ERROR(
@@ -239,6 +255,10 @@ BT::NodeStatus MoveManipulatorAction::onRunning()
         setHMIMessage(
           config().blackboard, robot_prefix_, "MOTION FAILED: " + action_result_.message, "red");
 
+        reportFault(
+          fault_codes::kPlannerRetriesExhausted, kSeverityError,
+          "motion failed after " + std::to_string(current_try_) +
+          " attempts: " + action_result_.message);
         return BT::NodeStatus::FAILURE;
       } else {
         RCLCPP_ERROR(
