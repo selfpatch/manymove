@@ -32,7 +32,7 @@ int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
 
-  auto node = rclcpp::Node::make_shared("bt_client_node");
+  auto node = rclcpp::Node::make_shared("collision_test");
   RCLCPP_INFO(node->get_logger(), "BT Client Node started (Purely Programmatic XML).");
 
   // ----------------------------------------------------------------------------
