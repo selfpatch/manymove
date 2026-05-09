@@ -48,7 +48,8 @@ jobs:
           BRANCH="sync/upstream-${DATE}"
           BEHIND="${{ steps.check.outputs.behind }}"
 
-          git checkout -b "$BRANCH" upstream/main
+          git checkout -b "$BRANCH" main
+          git merge upstream/main --no-ff -m "Sync with upstream pastoriomarco/manymove ($DATE)"
           git push -f origin "$BRANCH"
 
           EXISTING=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number' || echo "")
@@ -61,7 +62,7 @@ jobs:
 
           Diff: https://github.com/pastoriomarco/manymove/compare/${GITHUB_SHA}...upstream/main
 
-          Review and merge if nothing breaks our integration points."
+          Review and merge if nothing breaks our integration points. If merge conflicts appear, resolve locally and push to this branch."
           else
             echo "PR #${EXISTING} already exists for ${BRANCH}"
           fi
