@@ -44,6 +44,7 @@
 #include <std_msgs/msg/header.hpp>
 
 #include "manymove_cpp_trees/bt_converters.hpp"
+#include "manymove_cpp_trees/fault_codes.hpp"
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
@@ -535,6 +536,10 @@ BT::NodeStatus FoundationPoseAlignmentNode::onRunning()
         RCLCPP_WARN(
           node_->get_logger(), "[%s] Timed out waiting for detections on '%s'", name().c_str(),
           topic_snapshot.c_str());
+        reportFault(
+          fault_codes::kIsaacFoundationPoseFailed, kSeverityError,
+          "FoundationPose: no detection messages received on '" + topic_snapshot +
+          "' within " + std::to_string(timeout_seconds_) + "s");
         return BT::NodeStatus::FAILURE;
       }
     }
@@ -555,6 +560,11 @@ BT::NodeStatus FoundationPoseAlignmentNode::onRunning()
           node_->get_logger(),
           "[%s] Timed out waiting for a valid detection (target_id='%s', min_score=%.3f)",
           name().c_str(), target_id_.c_str(), minimum_score_);
+        reportFault(
+          fault_codes::kIsaacFoundationPoseFailed, kSeverityError,
+          "FoundationPose: no detection passed filters (target_id='" + target_id_ +
+          "', min_score=" + std::to_string(minimum_score_) + ") within " +
+          std::to_string(timeout_seconds_) + "s");
         return BT::NodeStatus::FAILURE;
       }
     }
