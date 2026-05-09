@@ -31,6 +31,7 @@
 #include <chrono>
 
 #include "behaviortree_cpp_v3/behavior_tree.h"
+#include "manymove_cpp_trees/fault_codes.hpp"
 
 using namespace std::chrono_literals;
 
@@ -100,6 +101,9 @@ BT::NodeStatus GripperCommandAction::onRunning()
           "GripperCommandAction: timed out waiting for action server '%s'.",
           action_server_name_.c_str());
         waiting_for_server_ = false;
+        reportFault(
+          fault_codes::kGripperCommandFailed, kSeverityError,
+          "GripperCommand server '" + action_server_name_ + "' not available");
         return BT::NodeStatus::FAILURE;
       }
 
@@ -152,8 +156,14 @@ BT::NodeStatus GripperCommandAction::onRunning()
   double pos = action_result_.position;
   setOutput("current_position", pos);
 
-  // Return SUCCESS if truly reached the goal, else FAILURE
-  return success ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
+  if (success) {
+    return BT::NodeStatus::SUCCESS;
+  }
+  reportFault(
+    fault_codes::kGripperCommandFailed, kSeverityError,
+    "GripperCommand goal not reached (reached_goal=false, stalled=false), final position=" +
+    std::to_string(pos));
+  return BT::NodeStatus::FAILURE;
 }
 
 void GripperCommandAction::onHalted()
@@ -226,6 +236,9 @@ BT::NodeStatus GripperTrajAction::onStart()
   // Wait a few seconds for the action server
   if (!action_client_->wait_for_action_server(5s)) {
     RCLCPP_ERROR(node_->get_logger(), "GripperTrajAction: server not available!");
+    reportFault(
+      fault_codes::kGripperTrajFailed, kSeverityError,
+      "GripperTraj action server not available within 5s");
     return BT::NodeStatus::FAILURE;
   }
 
@@ -277,8 +290,13 @@ BT::NodeStatus GripperTrajAction::onRunning()
     return BT::NodeStatus::RUNNING;
   }
 
-  // If result was received, return SUCCESS if success_ is true, else FAILURE
-  return success_ ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
+  if (success_) {
+    return BT::NodeStatus::SUCCESS;
+  }
+  reportFault(
+    fault_codes::kGripperTrajFailed, kSeverityError,
+    "GripperTraj trajectory execution failed (action result code != SUCCEEDED)");
+  return BT::NodeStatus::FAILURE;
 }
 
 void GripperTrajAction::onHalted()
