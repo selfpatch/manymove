@@ -44,6 +44,7 @@
 #include "manymove_cpp_trees/action_nodes_planner.hpp"
 #include "manymove_cpp_trees/action_nodes_signals.hpp"
 #include "manymove_cpp_trees/bt_converters.hpp"
+#include "manymove_cpp_trees/fault_reporting.hpp"
 #include "manymove_cpp_trees/hmi_service_node.hpp"
 #include "manymove_cpp_trees/move.hpp"
 #include "manymove_cpp_trees/object.hpp"
@@ -93,5 +94,26 @@ using manymove_cpp_trees::buildCopyPoseXML;
 using manymove_cpp_trees::buildCheckPoseDistanceXML;
 using manymove_cpp_trees::mainTreeWrapperXML;
 using manymove_cpp_trees::registerAllNodeTypes;
+
+namespace manymove_cpp_trees
+{
+
+// Construct a process-wide FaultReporter and stash it on the blackboard so
+// every FaultReporting-equipped BT node can fetch it in its constructor.
+// Call this once per bt_client_*.cpp main(), right after the canonical
+// `blackboard->set("node", node)` line.
+//
+// source_id defaults to the node's fully-qualified name, which matches the
+// SOVD apps[].ros_binding linkage used by the medkit gateway.
+inline void installFaultReporter(BT::Blackboard::Ptr blackboard, rclcpp::Node::SharedPtr node)
+{
+  auto reporter = std::make_shared<ros2_medkit_fault_reporter::FaultReporter>(
+    node, node->get_fully_qualified_name());
+  blackboard->set(manymove_cpp_trees::kFaultReporterBlackboardKey, reporter);
+}
+
+}  // namespace manymove_cpp_trees
+
+using manymove_cpp_trees::installFaultReporter;
 
 #endif  // MANYMOVE_CPP_TREES__MAIN_IMPORTS_HELPER_HPP_

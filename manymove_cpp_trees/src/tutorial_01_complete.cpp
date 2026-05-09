@@ -41,6 +41,7 @@ int main(int argc, char ** argv)
   // Create a blackboard and set "node"
   auto blackboard = BT::Blackboard::create();
   blackboard->set("node", node);
+  installFaultReporter(blackboard, node);
   RCLCPP_INFO(node->get_logger(), "Blackboard: set('node', <rclcpp::Node>)");
 
   // Create the keys variable for HMI

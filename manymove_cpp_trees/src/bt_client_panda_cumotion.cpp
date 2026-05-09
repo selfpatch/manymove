@@ -40,6 +40,7 @@ int main(int argc, char ** argv)
   // ----------------------------------------------------------------------------
   auto blackboard = BT::Blackboard::create();
   blackboard->set("node", node);
+  installFaultReporter(blackboard, node);
   RCLCPP_INFO(node->get_logger(), "Blackboard: set('node', <rclcpp::Node>)");
 
   std::vector<manymove_cpp_trees::BlackboardEntry> keys;
