@@ -284,7 +284,10 @@ BT::NodeStatus GripperTrajAction::onStart()
 BT::NodeStatus GripperTrajAction::onRunning()
 {
   if (!goal_sent_) {
-    return BT::NodeStatus::FAILURE;
+    // onRunning reached before onStart actually dispatched a goal: BT
+    // framework misuse, not an operational fault (per the
+    // programmer-error-throws / operational-fault-reports policy).
+    throw BT::RuntimeError("GripperTrajAction::onRunning called before goal was sent");
   }
 
   if (!result_received_) {

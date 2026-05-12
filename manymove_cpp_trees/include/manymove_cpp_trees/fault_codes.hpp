@@ -51,8 +51,6 @@ inline constexpr char kPlannerRetryAttempt[] = "MANYMOVE_PLANNER_RETRY_ATTEMPT";
 inline constexpr char kPlannerRetriesExhausted[] = "MANYMOVE_PLANNER_RETRIES_EXHAUSTED";
 // External e-stop / stop_execution flag triggered while motion was running.
 inline constexpr char kPlannerEstopTriggered[] = "MANYMOVE_PLANNER_ESTOP_TRIGGERED";
-// Required move_id input missing on the BT node.
-inline constexpr char kPlannerMissingMoveId[] = "MANYMOVE_PLANNER_MISSING_MOVE_ID";
 
 // -- Object manager ---------------------------------------------------------
 // AddCollisionObject action returned failure (planning scene reject).
@@ -65,8 +63,6 @@ inline constexpr char kObjectAttachFailed[] = "MANYMOVE_OBJECT_ATTACH_FAILED";
 inline constexpr char kObjectGetPoseFailed[] = "MANYMOVE_OBJECT_GET_POSE_FAILED";
 // WaitForObject elapsed without the expected object presence/absence.
 inline constexpr char kObjectWaitTimeout[] = "MANYMOVE_OBJECT_WAIT_TIMEOUT";
-// CheckObjectExists action errored out (different from a clean negative).
-inline constexpr char kObjectExistsCheckFailed[] = "MANYMOVE_OBJECT_EXISTS_CHECK_FAILED";
 
 // -- Signals (gripper, IO, robot state) -------------------------------------
 // SetOutputAction returned a failed result from the action server.

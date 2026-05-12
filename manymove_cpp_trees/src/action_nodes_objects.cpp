@@ -1119,6 +1119,11 @@ void WaitForObjectAction::onHalted()
     RCLCPP_INFO(node_->get_logger(), "%s: Goal canceled.", kName);
   }
 
+  // Heal a previously raised wait-timeout: when the subtree is halted
+  // mid-wait, the timeout condition no longer holds. Without this,
+  // any earlier `kObjectWaitTimeout` would linger in FaultManager.
+  reportFaultPassed(fault_codes::kObjectWaitTimeout);
+
   goal_sent_ = false;
   result_received_ = false;
 }

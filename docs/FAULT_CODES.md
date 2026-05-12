@@ -35,7 +35,7 @@ node sources; the source-of-truth string constants live in
 | `MANYMOVE_OBJECT_REMOVE_FAILED` | ERROR | `RemoveCollisionObjectAction` action result `success=false`. | - |
 | `MANYMOVE_OBJECT_ATTACH_FAILED` | ERROR | `AttachDetachObjectAction` action result `success=false`. | - |
 | `MANYMOVE_OBJECT_GET_POSE_FAILED` | ERROR | `GetObjectPoseAction` action result `success=false`. | - |
-| `MANYMOVE_OBJECT_WAIT_TIMEOUT` | WARN | `WaitForObjectAction` elapsed without observing the expected presence/absence. | `reportFaultPassed` when the wait condition is met. |
+| `MANYMOVE_OBJECT_WAIT_TIMEOUT` | WARN | `WaitForObjectAction` elapsed without observing the expected presence/absence. | `reportFaultPassed` when the wait condition is met or on `onHalted` (subtree abandoned the wait). |
 
 `CheckObjectExistsAction` returning FAILURE for "object missing" is intentional
 control flow used by callers as a condition; it is not instrumented.
@@ -46,8 +46,9 @@ control flow used by callers as a condition; it is not instrumented.
 |------|----------|---------|------|
 | `MANYMOVE_SIGNAL_SET_OUTPUT_FAILED` | ERROR | `SetOutputAction` action result reports failure. | - |
 | `MANYMOVE_SIGNAL_GET_INPUT_FAILED` | ERROR | `GetInputAction` action result reports failure, or `WaitForInputAction` cannot connect to the action server within 5s. | - |
-| `MANYMOVE_SIGNAL_WAIT_INPUT_TIMEOUT` | WARN | `WaitForInputAction` timeout elapsed without observing the desired value. | `reportFaultPassed` on success. |
+| `MANYMOVE_SIGNAL_WAIT_INPUT_TIMEOUT` | WARN | `WaitForInputAction` timeout elapsed without observing the desired value. | `reportFaultPassed` on success or on `onHalted` (subtree abandoned the wait). |
 | `MANYMOVE_ROBOT_NOT_READY` | CRITICAL | `CheckRobotStateAction` reports `ready=false`. | `reportFaultPassed` once the robot reports `ready=true`. |
+| `MANYMOVE_ROBOT_RESET_FAILED` | ERROR | `ResetRobotStateAction` fails any of its three steps (unload trajectory controller, reset robot state, load trajectory controller); raised on goal rejection or non-SUCCEEDED result. | - |
 
 ## Logic / TF (`action_nodes_logic.cpp`)
 
@@ -67,7 +68,7 @@ control flow used by callers as a condition; it is not instrumented.
 
 | Code | Severity | Trigger | Pair |
 |------|----------|---------|------|
-| `MANYMOVE_ISAAC_FOUNDATION_POSE_FAILED` | ERROR | `FoundationPoseAlignmentNode` timed out waiting for detections, or no detection passed the `target_id`/`min_score` filter within the configured timeout. | - |
+| `MANYMOVE_ISAAC_FOUNDATION_POSE_FAILED` | ERROR | `FoundationPoseAlignmentNode` timed out waiting for detections, no detection passed the `target_id`/`min_score` filter within the configured timeout, or TF transform of the detection pose to the alignment / planning frame timed out. | - |
 
 `GetEntityPoseNode`/`SetEntityPoseNode` service errors and Isaac TF timeouts
 are not yet instrumented; they will gain dedicated codes when the

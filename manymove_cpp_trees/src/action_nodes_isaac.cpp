@@ -608,6 +608,10 @@ BT::NodeStatus FoundationPoseAlignmentNode::onRunning()
         RCLCPP_ERROR(
           node_->get_logger(), "[%s] Timed out waiting for TF transform to '%s'", name().c_str(),
           alignment_frame.c_str());
+        reportFault(
+          fault_codes::kIsaacFoundationPoseFailed, kSeverityError,
+          "FoundationPose: TF transform to '" + alignment_frame +
+          "' timed out after " + std::to_string(timeout_seconds_) + "s");
         return BT::NodeStatus::FAILURE;
       }
     }
@@ -646,6 +650,10 @@ BT::NodeStatus FoundationPoseAlignmentNode::onRunning()
           RCLCPP_ERROR(
             node_->get_logger(), "[%s] Timed out waiting for TF transform to '%s'", name().c_str(),
             planning_frame_.c_str());
+          reportFault(
+            fault_codes::kIsaacFoundationPoseFailed, kSeverityError,
+            "FoundationPose: TF transform to planning frame '" + planning_frame_ +
+            "' timed out after " + std::to_string(timeout_seconds_) + "s");
           return BT::NodeStatus::FAILURE;
         }
       }

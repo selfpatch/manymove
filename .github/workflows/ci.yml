@@ -13,7 +13,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ros_distro: [humble, jazzy]
+        # Humble dropped from the matrix because ros-humble-ros2-medkit-*
+        # debs are not yet available on packages.ros.org despite the
+        # rosdistro entry. The fork targets the medkit integration path,
+        # so a CI build without those debs is not meaningful. Re-add when
+        # Humble debs land.
+        ros_distro: [jazzy]
 
     container:
       image: ros:${{ matrix.ros_distro }}-ros-base
@@ -26,6 +31,9 @@ jobs:
       CCACHE_BASEDIR: /tmp/ros_ws
       CCACHE_COMPRESS: "1"
       CCACHE_MAXSIZE: 5G
+      # Pin medkit to the rosdistro-released version so an upstream bump
+      # does not silently break this CI. Update deliberately when bumping.
+      MEDKIT_VERSION: "0.4.0-1"
 
     steps:
       - name: Checkout repository
@@ -63,10 +71,10 @@ jobs:
             ccache \
             ros-$ROS_DISTRO-topic-based-ros2-control \
             python3-colcon-common-extensions python3-rosdep git \
-            ros-$ROS_DISTRO-ros2-medkit-fault-reporter \
-            ros-$ROS_DISTRO-ros2-medkit-msgs \
-            ros-$ROS_DISTRO-ros2-medkit-fault-manager \
-            ros-$ROS_DISTRO-ros2-medkit-cmake \
+            ros-$ROS_DISTRO-ros2-medkit-fault-reporter=$MEDKIT_VERSION* \
+            ros-$ROS_DISTRO-ros2-medkit-msgs=$MEDKIT_VERSION* \
+            ros-$ROS_DISTRO-ros2-medkit-fault-manager=$MEDKIT_VERSION* \
+            ros-$ROS_DISTRO-ros2-medkit-cmake=$MEDKIT_VERSION* \
             ros-$ROS_DISTRO-moveit \
             ros-$ROS_DISTRO-ur \
             ros-$ROS_DISTRO-ur-moveit-config \
