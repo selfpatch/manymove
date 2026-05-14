@@ -106,10 +106,15 @@ namespace manymove_cpp_trees
 //
 // source_id defaults to the node's fully-qualified name, which matches the
 // SOVD apps[].ros_binding linkage used by the medkit gateway.
-inline void installFaultReporter(BT::Blackboard::Ptr blackboard, rclcpp::Node::SharedPtr node)
+//
+// service_name lets callers remap the FaultManager service for namespaced
+// test rigs or multi-robot setups (e.g. "/robot1/fault_manager/report_fault").
+inline void installFaultReporter(
+  BT::Blackboard::Ptr blackboard, rclcpp::Node::SharedPtr node,
+  const std::string & service_name = "/fault_manager/report_fault")
 {
   auto reporter = std::make_shared<ros2_medkit_fault_reporter::FaultReporter>(
-    node, node->get_fully_qualified_name());
+    node, node->get_fully_qualified_name(), service_name);
   blackboard->set(manymove_cpp_trees::kFaultReporterBlackboardKey, reporter);
 }
 

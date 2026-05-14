@@ -248,6 +248,14 @@ private:
   bool reset_goal_sent_;
   bool load_goal_sent_;
 
+  // One failed reset can fan out across rejection + result-failure callbacks
+  // for unload-trajectory, reset-robot-state and load-trajectory (up to 6
+  // call sites). Without coalescing, those would all emit
+  // kRobotResetFailed at kSeverityError (>= bypass_severity), driving the
+  // AUTOSAR-DEM debounce counter past confirmation_threshold on a single
+  // logical incident. Latch on first emission per run; reset in onStart.
+  bool fault_reported_;
+
   std::string computed_controller_name_;
 
   ResetRobotState::Result action_result_;
@@ -313,6 +321,12 @@ private:
   // last read from the server
   bool last_success_;
   int last_value_;
+
+  // Track whether kSignalWaitInputTimeout was actually emitted this run so
+  // onHalted only fires reportFaultPassed when a FAILED preceded it.
+  // Without this, every halt accumulated a spurious PASSED, which biases
+  // LocalFilter::should_forward_passed counters in the medkit reporter.
+  bool timeout_reported_;
 };
 
 }  // namespace manymove_cpp_trees

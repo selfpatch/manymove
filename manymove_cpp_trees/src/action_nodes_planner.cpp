@@ -112,6 +112,10 @@ BT::NodeStatus MoveManipulatorAction::onStart()
       "collision detected on " + robot_prefix_ + " before motion start");
     return BT::NodeStatus::FAILURE;
   }
+  // Heal any prior CONFIRMED collision once the flag has been cleared.
+  // Without this, the fault lingers in FaultManager after the operator /
+  // recovery cleared the underlying condition on hardware.
+  reportFaultPassed(fault_codes::kPlannerCollisionDetected);
 
   // Read move_id.
   if (!getInput<std::string>("move_id", move_id_)) {
@@ -138,6 +142,9 @@ BT::NodeStatus MoveManipulatorAction::onStart()
       "stop_execution flag set on " + robot_prefix_ + " before motion start");
     return BT::NodeStatus::FAILURE;
   }
+  // Heal any prior CONFIRMED e-stop once the flag has been cleared by the
+  // operator. Without this, the CRITICAL fault lingers after release.
+  reportFaultPassed(fault_codes::kPlannerEstopTriggered);
 
   return BT::NodeStatus::RUNNING;
 }
@@ -227,8 +234,13 @@ BT::NodeStatus MoveManipulatorAction::onRunning()
       setHMIMessage(config().blackboard, robot_prefix_, "", "grey");
 
       RCLCPP_INFO(node_->get_logger(), "[MoveManipulatorAction] success => returning SUCCESS");
-      // Heal the per-attempt soft fault if any retry was reported earlier.
-      reportFaultPassed(fault_codes::kPlannerRetryAttempt);
+      // Heal the per-attempt soft fault only when a retry actually occurred.
+      // On first-attempt success current_try_ is still 0 — no FAILED was
+      // ever emitted, and a stray PASSED biases
+      // LocalFilter::should_forward_passed in the medkit reporter.
+      if (current_try_ > 0) {
+        reportFaultPassed(fault_codes::kPlannerRetryAttempt);
+      }
       return BT::NodeStatus::SUCCESS;
     } else {
       config().blackboard->set("trajectory_" + move_id_, trajectory_msgs::msg::JointTrajectory());
@@ -291,6 +303,14 @@ void MoveManipulatorAction::onHalted()
 
   // HMI message
   setHMIMessage(config().blackboard, robot_prefix_, "MOTION HALTED", "red");
+
+  // Heal the per-attempt soft fault on halt, mirroring WaitForInputAction::
+  // onHalted and WaitForObjectAction::onHalted. Without this, a halted
+  // retry loop leaves a lingering kPlannerRetryAttempt soft fault in
+  // FaultManager until the next successful attempt.
+  if (current_try_ > 0) {
+    reportFaultPassed(fault_codes::kPlannerRetryAttempt);
+  }
 }
 
 void MoveManipulatorAction::goalResponseCallback(

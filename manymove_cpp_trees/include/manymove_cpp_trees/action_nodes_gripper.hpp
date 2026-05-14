@@ -136,6 +136,11 @@ private:
 // PublishJointStateAction
 // =======================================================
 
+// NOTE: this node currently has no fault sites — the call is fire-and-forget
+// via the publisher API and cannot fail in a way worth reporting. The
+// FaultReporting base is kept so that any future failure mode (e.g. detection
+// of a downstream subscriber drop) can emit through the same channel as the
+// rest of the BT without changing the inheritance.
 class PublishJointStateAction : public BT::SyncActionNode, public FaultReporting
 {
 public:

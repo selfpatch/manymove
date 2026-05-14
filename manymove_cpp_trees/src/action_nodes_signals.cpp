@@ -488,7 +488,11 @@ ResetRobotStateAction::ResetRobotStateAction(
   goal_sent_(false),
   result_received_(false),
   unload_traj_success_(false),
-  load_traj_success_(false)
+  load_traj_success_(false),
+  unload_goal_sent_(false),
+  reset_goal_sent_(false),
+  load_goal_sent_(false),
+  fault_reported_(false)
 {
   if (!config.blackboard) {
     throw BT::RuntimeError("ResetRobotStateAction: no blackboard provided.");
@@ -553,6 +557,7 @@ BT::NodeStatus ResetRobotStateAction::onStart()
   unload_goal_sent_ = false;
   reset_goal_sent_ = false;
   load_goal_sent_ = false;
+  fault_reported_ = false;
 
   // Step 1: Call UnloadTrajController action
   UnloadTrajController::Goal unload_traj_goal;
@@ -657,10 +662,13 @@ void ResetRobotStateAction::goalResponseCallback(
       name().c_str());
     action_result_.success = false;
     result_received_ = true;
-    reportFault(
-      fault_codes::kRobotResetFailed, kSeverityError,
-      std::string("ResetRobotStateAction [") + name() +
-      "]: reset_robot_state goal rejected by server");
+    if (!fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: reset_robot_state goal rejected by server");
+    }
   } else {
     RCLCPP_INFO(
       node_->get_logger(), "ResetRobotStateAction [%s]: ResetRobotState Goal ACCEPTED by server.",
@@ -676,10 +684,13 @@ void ResetRobotStateAction::resultCallback(
   } else {
     action_result_.success = false;
     action_result_.message = "ResetRobotState aborted or failed";
-    reportFault(
-      fault_codes::kRobotResetFailed, kSeverityError,
-      std::string("ResetRobotStateAction [") + name() +
-      "]: reset_robot_state action aborted or failed");
+    if (!fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: reset_robot_state action aborted or failed");
+    }
   }
   result_received_ = true;
 }
@@ -692,10 +703,13 @@ void ResetRobotStateAction::goalResponseCallbackUnloadTraj(
       node_->get_logger(),
       "ResetRobotStateAction [%s]: UnloadTrajController Goal REJECTED by server.", name().c_str());
     unload_traj_success_ = false;
-    reportFault(
-      fault_codes::kRobotResetFailed, kSeverityError,
-      std::string("ResetRobotStateAction [") + name() +
-      "]: unload_trajectory_controller goal rejected by server");
+    if (!fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: unload_trajectory_controller goal rejected by server");
+    }
   } else {
     RCLCPP_INFO(
       node_->get_logger(),
@@ -708,7 +722,8 @@ void ResetRobotStateAction::resultCallbackUnloadTraj(
 {
   if (wrapped_result.code == rclcpp_action::ResultCode::SUCCEEDED) {
     unload_traj_success_ = wrapped_result.result->success;
-    if (!unload_traj_success_) {
+    if (!unload_traj_success_ && !fault_reported_) {
+      fault_reported_ = true;
       reportFault(
         fault_codes::kRobotResetFailed, kSeverityError,
         std::string("ResetRobotStateAction [") + name() +
@@ -716,10 +731,13 @@ void ResetRobotStateAction::resultCallbackUnloadTraj(
     }
   } else {
     unload_traj_success_ = false;
-    reportFault(
-      fault_codes::kRobotResetFailed, kSeverityError,
-      std::string("ResetRobotStateAction [") + name() +
-      "]: unload_trajectory_controller action aborted or failed");
+    if (!fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: unload_trajectory_controller action aborted or failed");
+    }
   }
 }
 
@@ -731,10 +749,13 @@ void ResetRobotStateAction::goalResponseCallbackLoadTraj(
       node_->get_logger(),
       "ResetRobotStateAction [%s]: LoadTrajController Goal REJECTED by server.", name().c_str());
     load_traj_success_ = false;
-    reportFault(
-      fault_codes::kRobotResetFailed, kSeverityError,
-      std::string("ResetRobotStateAction [") + name() +
-      "]: load_trajectory_controller goal rejected by server");
+    if (!fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: load_trajectory_controller goal rejected by server");
+    }
   } else {
     RCLCPP_INFO(
       node_->get_logger(),
@@ -747,7 +768,8 @@ void ResetRobotStateAction::resultCallbackLoadTraj(
 {
   if (wrapped_result.code == rclcpp_action::ResultCode::SUCCEEDED) {
     load_traj_success_ = wrapped_result.result->success;
-    if (!load_traj_success_) {
+    if (!load_traj_success_ && !fault_reported_) {
+      fault_reported_ = true;
       reportFault(
         fault_codes::kRobotResetFailed, kSeverityError,
         std::string("ResetRobotStateAction [") + name() +
@@ -755,10 +777,13 @@ void ResetRobotStateAction::resultCallbackLoadTraj(
     }
   } else {
     load_traj_success_ = false;
-    reportFault(
-      fault_codes::kRobotResetFailed, kSeverityError,
-      std::string("ResetRobotStateAction [") + name() +
-      "]: load_trajectory_controller action aborted or failed");
+    if (!fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: load_trajectory_controller action aborted or failed");
+    }
   }
 }
 
@@ -768,7 +793,8 @@ WaitForInputAction::WaitForInputAction(
   goal_sent_(false),
   result_received_(false),
   last_success_(false),
-  last_value_(0)
+  last_value_(0),
+  timeout_reported_(false)
 {
   // Obtain the ROS2 node from the blackboard
   if (!config.blackboard) {
@@ -786,6 +812,7 @@ BT::NodeStatus WaitForInputAction::onStart()
   result_received_ = false;
   last_success_ = false;
   last_value_ = 0;
+  timeout_reported_ = false;
 
   // Read ports
   if (!getInput<std::string>("io_type", io_type_)) {
@@ -863,8 +890,13 @@ BT::NodeStatus WaitForInputAction::onRunning()
         std::to_string(desired_value_),
         "green");
 
-      // Pair: clear timeout filter once the desired value is observed.
-      reportFaultPassed(fault_codes::kSignalWaitInputTimeout);
+      // Pair: only clear if we actually emitted the timeout earlier. A
+      // first-pass success has no FAILED to heal and a stray PASSED biases
+      // LocalFilter::should_forward_passed.
+      if (timeout_reported_) {
+        reportFaultPassed(fault_codes::kSignalWaitInputTimeout);
+        timeout_reported_ = false;
+      }
       return BT::NodeStatus::SUCCESS;
     }
 
@@ -884,6 +916,7 @@ BT::NodeStatus WaitForInputAction::onRunning()
           fault_codes::kSignalWaitInputTimeout, kSeverityWarn,
           "WaitForInput " + io_type_ + "[" + std::to_string(ionum_) + "] timed out after " +
           std::to_string(timeout_) + "s, last_value=" + std::to_string(last_value_));
+        timeout_reported_ = true;
         return BT::NodeStatus::FAILURE;
       }
     }
@@ -914,10 +947,14 @@ void WaitForInputAction::onHalted()
     action_client_->async_cancel_all_goals();
   }
   // Heal a previously raised wait-timeout: when the subtree is halted
-  // mid-wait, the timeout condition no longer holds. Without this,
-  // any earlier `kSignalWaitInputTimeout` would linger in FaultManager
-  // until the next successful wait.
-  reportFaultPassed(fault_codes::kSignalWaitInputTimeout);
+  // mid-wait, the timeout condition no longer holds. Only emit if we
+  // actually reported the FAILED earlier — otherwise the PASSED would
+  // accumulate in LocalFilter::should_forward_passed and bias subsequent
+  // healing decisions.
+  if (timeout_reported_) {
+    reportFaultPassed(fault_codes::kSignalWaitInputTimeout);
+    timeout_reported_ = false;
+  }
   goal_sent_ = false;
   result_received_ = false;
 }
