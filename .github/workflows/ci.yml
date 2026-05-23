@@ -13,12 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Humble dropped from the matrix because ros-humble-ros2-medkit-*
-        # debs are not yet available on packages.ros.org despite the
-        # rosdistro entry. The fork targets the medkit integration path,
-        # so a CI build without those debs is not meaningful. Re-add when
-        # Humble debs land.
-        ros_distro: [jazzy]
+        ros_distro: [humble, jazzy]
 
     container:
       image: ros:${{ matrix.ros_distro }}-ros-base
