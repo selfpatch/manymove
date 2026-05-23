@@ -109,12 +109,14 @@ TEST_F(FaultReportingFixture, MixinForwardsErrorReportToFakeManager)
     manymove_cpp_trees::kSeverityError,
     "test collision");
 
-  ASSERT_TRUE(fake_fm_->wait_for(
+  ASSERT_TRUE(
+    fake_fm_->wait_for(
       exec_, manymove_cpp_trees::fault_codes::kPlannerCollisionDetected, 2s));
 
   const auto received = fake_fm_->received();
   ASSERT_EQ(received.size(), 1u);
-  EXPECT_EQ(received.front().fault_code,
+  EXPECT_EQ(
+    received.front().fault_code,
     manymove_cpp_trees::fault_codes::kPlannerCollisionDetected);
   EXPECT_EQ(received.front().severity, ros2_medkit_msgs::msg::Fault::SEVERITY_ERROR);
   EXPECT_EQ(received.front().description, "test collision");
@@ -130,12 +132,14 @@ TEST_F(FaultReportingFixture, ReportFaultPassedDeliversPassedEvent)
     manymove_cpp_trees::fault_codes::kPlannerRetryAttempt,
     manymove_cpp_trees::kSeverityError,
     "failure");
-  ASSERT_TRUE(fake_fm_->wait_for(
+  ASSERT_TRUE(
+    fake_fm_->wait_for(
       exec_, manymove_cpp_trees::fault_codes::kPlannerRetryAttempt, 2s));
   fake_fm_->clear();
 
   node.reportFaultPassed(manymove_cpp_trees::fault_codes::kPlannerRetryAttempt);
-  ASSERT_TRUE(fake_fm_->wait_for(
+  ASSERT_TRUE(
+    fake_fm_->wait_for(
       exec_, manymove_cpp_trees::fault_codes::kPlannerRetryAttempt, 2s));
 
   const auto received = fake_fm_->received();
