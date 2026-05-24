@@ -40,6 +40,10 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#ifdef MANYMOVE_WITH_MEDKIT
+#include <ros2_medkit_fault_reporter/fault_reporter.hpp>
+#endif
+
 #include "manymove_cpp_trees/action_nodes_logic.hpp"
 #include "manymove_cpp_trees/action_nodes_objects.hpp"
 #include "manymove_cpp_trees/action_nodes_planner.hpp"
@@ -109,6 +113,12 @@ namespace manymove_cpp_trees
 //
 // service_name lets callers remap the FaultManager service for namespaced
 // test rigs or multi-robot setups (e.g. "/robot1/fault_manager/report_fault").
+//
+// When the package is built with MANYMOVE_WITH_MEDKIT=OFF this is a no-op
+// kept for source compatibility: bt_client_*.cpp main() can call it
+// unconditionally and the FaultReporting mixin in every action node still
+// compiles, with reportFault()/reportFaultPassed() folding to no-ops.
+#ifdef MANYMOVE_WITH_MEDKIT
 inline void installFaultReporter(
   BT::Blackboard::Ptr blackboard, rclcpp::Node::SharedPtr node,
   const std::string & service_name = "/fault_manager/report_fault")
@@ -117,6 +127,13 @@ inline void installFaultReporter(
     node, node->get_fully_qualified_name(), service_name);
   blackboard->set(manymove_cpp_trees::kFaultReporterBlackboardKey, reporter);
 }
+#else
+inline void installFaultReporter(
+  BT::Blackboard::Ptr /*blackboard*/, rclcpp::Node::SharedPtr /*node*/,
+  const std::string & /*service_name*/ = "/fault_manager/report_fault")
+{
+}
+#endif
 
 }  // namespace manymove_cpp_trees
 

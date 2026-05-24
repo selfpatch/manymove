@@ -1,7 +1,10 @@
 # manymove fault codes
 
 This is the catalogue of fault codes emitted by `manymove_cpp_trees` BT action
-nodes via [`ros2_medkit_fault_reporter`](https://github.com/selfpatch/ros2_medkit).
+nodes via [`ros2_medkit_fault_reporter`](https://github.com/selfpatch/ros2_medkit)
+when built with `MANYMOVE_WITH_MEDKIT=ON` (see the package README for the
+build instructions). With the option OFF the same `reportFault()` call sites
+compile to no-ops and nothing is published.
 Each entry below maps to one or more `reportFault()` call sites in the action
 node sources; the source-of-truth string constants live in
 `manymove_cpp_trees/include/manymove_cpp_trees/fault_codes.hpp`.

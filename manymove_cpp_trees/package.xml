@@ -27,8 +27,12 @@
   <depend>simulation_interfaces</depend>
   <depend>vision_msgs</depend>
   <depend>rcpputils</depend>
-  <depend>ros2_medkit_fault_reporter</depend>
-  <depend>ros2_medkit_msgs</depend>
+  <!-- ros2_medkit deps follow the MANYMOVE_WITH_MEDKIT CMake option (default
+       OFF). The rosdep condition keys off the env var of the same name:
+       MANYMOVE_WITH_MEDKIT=1 -> install, unset or any other value -> skip.
+       Keep this aligned with the CMake option in CMakeLists.txt. -->
+  <depend condition="$MANYMOVE_WITH_MEDKIT == 1">ros2_medkit_fault_reporter</depend>
+  <depend condition="$MANYMOVE_WITH_MEDKIT == 1">ros2_medkit_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

@@ -12,6 +12,18 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 #--------------------------------------------------------------------
+# Build options
+#--------------------------------------------------------------------
+# ros2_medkit fault reporting is off by default to keep the upstream
+# build free of extra deps. Turn it on (-DMANYMOVE_WITH_MEDKIT=ON plus
+# MANYMOVE_WITH_MEDKIT=1 in the env for rosdep) to pull in the medkit
+# overlay; with it off, the FaultReporting mixin and installFaultReporter()
+# compile to no-ops so action nodes build unchanged.
+option(MANYMOVE_WITH_MEDKIT
+  "Build with ros2_medkit fault reporting integration"
+  OFF)
+
+#--------------------------------------------------------------------
 # Dependencies
 #--------------------------------------------------------------------
 find_package(ament_cmake              REQUIRED)
@@ -32,8 +44,11 @@ find_package(std_msgs                 REQUIRED)
 find_package(simulation_interfaces    REQUIRED)
 find_package(vision_msgs              REQUIRED)
 find_package(rcpputils                REQUIRED)
-find_package(ros2_medkit_fault_reporter REQUIRED)
-find_package(ros2_medkit_msgs         REQUIRED)
+
+if(MANYMOVE_WITH_MEDKIT)
+  find_package(ros2_medkit_fault_reporter REQUIRED)
+  find_package(ros2_medkit_msgs         REQUIRED)
+endif()
 
 #--------------------------------------------------------------------
 # Library with all BT helper nodes
@@ -59,8 +74,16 @@ ament_target_dependencies(manymove_cpp_trees_lib
   manymove_planner manymove_object_manager
   trajectory_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs std_srvs manymove_msgs control_msgs
   std_msgs simulation_interfaces vision_msgs rcpputils
-  ros2_medkit_fault_reporter ros2_medkit_msgs
 )
+
+if(MANYMOVE_WITH_MEDKIT)
+  ament_target_dependencies(manymove_cpp_trees_lib
+    ros2_medkit_fault_reporter ros2_medkit_msgs)
+  # PUBLIC so consumers (bt_client_* execs, tests) inherit the define and
+  # pick the medkit-enabled branches in fault_reporting.hpp /
+  # main_imports_helper.hpp without each target having to set it again.
+  target_compile_definitions(manymove_cpp_trees_lib PUBLIC MANYMOVE_WITH_MEDKIT)
+endif()
 
 #--------------------------------------------------------------------
 # Helper macro to create BT-client executables
@@ -75,8 +98,12 @@ macro(bt_client_exec NAME)
     manymove_planner manymove_object_manager
     trajectory_msgs tf2 std_srvs manymove_msgs control_msgs
     std_msgs simulation_interfaces rcpputils
-    ros2_medkit_fault_reporter ros2_medkit_msgs
   )
+
+  if(MANYMOVE_WITH_MEDKIT)
+    ament_target_dependencies(${NAME}
+      ros2_medkit_fault_reporter ros2_medkit_msgs)
+  endif()
 endmacro()
 
 bt_client_exec(bt_client)
@@ -131,8 +158,11 @@ ament_export_dependencies(
   manymove_planner manymove_object_manager
   trajectory_msgs tf2 tf2_ros tf2_geometry_msgs std_srvs manymove_msgs control_msgs
   std_msgs simulation_interfaces vision_msgs rcpputils
-  ros2_medkit_fault_reporter ros2_medkit_msgs
 )
+
+if(MANYMOVE_WITH_MEDKIT)
+  ament_export_dependencies(ros2_medkit_fault_reporter ros2_medkit_msgs)
+endif()
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -152,8 +182,11 @@ if(BUILD_TESTING)
         rclcpp rclcpp_action behaviortree_cpp_v3
         manymove_planner manymove_object_manager
         trajectory_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs std_srvs manymove_msgs control_msgs
-        std_msgs simulation_interfaces vision_msgs rcpputils
-        ros2_medkit_fault_reporter ros2_medkit_msgs)
+        std_msgs simulation_interfaces vision_msgs rcpputils)
+      if(MANYMOVE_WITH_MEDKIT)
+        ament_target_dependencies(${target}
+          ros2_medkit_fault_reporter ros2_medkit_msgs)
+      endif()
     endif()
   endfunction()
 
@@ -184,8 +217,10 @@ if(BUILD_TESTING)
   manymove_cpp_trees_add_gtest(test_bt_integration
     test/test_bt_integration.cpp)
 
-  manymove_cpp_trees_add_gtest(test_fault_reporting
-    test/test_fault_reporting.cpp)
+  if(MANYMOVE_WITH_MEDKIT)
+    manymove_cpp_trees_add_gtest(test_fault_reporting
+      test/test_fault_reporting.cpp)
+  endif()
 endif()
 
 ament_package()

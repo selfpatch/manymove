@@ -34,8 +34,10 @@
 #include <memory>
 #include <string>
 
+#ifdef MANYMOVE_WITH_MEDKIT
 #include <ros2_medkit_fault_reporter/fault_reporter.hpp>
 #include <ros2_medkit_msgs/msg/fault.hpp>
+#endif
 
 namespace manymove_cpp_trees
 {
@@ -45,6 +47,7 @@ namespace manymove_cpp_trees
 // main_imports_helper.hpp.
 inline constexpr char kFaultReporterBlackboardKey[] = "fault_reporter";
 
+#ifdef MANYMOVE_WITH_MEDKIT
 // Severity aliases that mirror ros2_medkit_msgs::msg::Fault::SEVERITY_*. Kept
 // here as a header-local convenience so call sites do not have to spell out
 // the verbose qualified constants on every reportFault() invocation.
@@ -52,6 +55,15 @@ inline constexpr uint8_t kSeverityInfo = ros2_medkit_msgs::msg::Fault::SEVERITY_
 inline constexpr uint8_t kSeverityWarn = ros2_medkit_msgs::msg::Fault::SEVERITY_WARN;
 inline constexpr uint8_t kSeverityError = ros2_medkit_msgs::msg::Fault::SEVERITY_ERROR;
 inline constexpr uint8_t kSeverityCritical = ros2_medkit_msgs::msg::Fault::SEVERITY_CRITICAL;
+#else
+// Severity constants kept value-compatible with ros2_medkit_msgs::msg::Fault
+// so call sites compile unchanged when the medkit dep is disabled at build
+// time (MANYMOVE_WITH_MEDKIT=OFF).
+inline constexpr uint8_t kSeverityInfo = 0;
+inline constexpr uint8_t kSeverityWarn = 1;
+inline constexpr uint8_t kSeverityError = 2;
+inline constexpr uint8_t kSeverityCritical = 3;
+#endif
 
 // Capability class that gives a BT action node one-line access to the
 // process-wide FaultReporter installed on the blackboard. Inherited as a
@@ -63,10 +75,11 @@ inline constexpr uint8_t kSeverityCritical = ros2_medkit_msgs::msg::Fault::SEVER
 // inherit this: their FAILURE return is normal control flow, not a fault,
 // and instrumenting them would flood the FaultManager.
 //
-// Lifetime: keeps a shared_ptr to the reporter so it is safe to use from any
-// callback running on the same node executor. The reporter itself is owned
-// by the bt_client_*.cpp main(); destruction order is fine because the
-// blackboard outlives every BT node that pulled the pointer in its ctor.
+// When the package is built with MANYMOVE_WITH_MEDKIT=OFF the class becomes a
+// stub with identical public API: every reportFault()/reportFaultPassed()
+// call compiles to a no-op and no medkit headers are pulled in. This lets
+// downstream users build manymove without the ros2_medkit overlay while
+// keeping the integrated build (ON) the default.
 class FaultReporting
 {
 public:
@@ -75,6 +88,7 @@ public:
   FaultReporting() = default;
 
 protected:
+#ifdef MANYMOVE_WITH_MEDKIT
   explicit FaultReporting(const BT::Blackboard::Ptr & blackboard)
   {
     if (blackboard) {
@@ -103,6 +117,17 @@ protected:
   }
 
   std::shared_ptr<ros2_medkit_fault_reporter::FaultReporter> reporter_;
+#else
+  explicit FaultReporting(const BT::Blackboard::Ptr & /*blackboard*/) {}
+
+  void reportFault(
+    const char * /*fault_code*/, uint8_t /*severity*/,
+    const std::string & /*description*/) const
+  {
+  }
+
+  void reportFaultPassed(const char * /*fault_code*/) const {}
+#endif
 };
 
 }  // namespace manymove_cpp_trees
