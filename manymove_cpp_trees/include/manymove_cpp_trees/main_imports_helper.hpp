@@ -34,16 +34,22 @@
 #include <behaviortree_cpp_v3/decorators/force_failure_node.h>
 #include <behaviortree_cpp_v3/loggers/bt_zmq_publisher.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
+
+#ifdef MANYMOVE_WITH_MEDKIT
+#include <ros2_medkit_fault_reporter/fault_reporter.hpp>
+#endif
 
 #include "manymove_cpp_trees/action_nodes_logic.hpp"
 #include "manymove_cpp_trees/action_nodes_objects.hpp"
 #include "manymove_cpp_trees/action_nodes_planner.hpp"
 #include "manymove_cpp_trees/action_nodes_signals.hpp"
 #include "manymove_cpp_trees/bt_converters.hpp"
+#include "manymove_cpp_trees/fault_reporting.hpp"
 #include "manymove_cpp_trees/hmi_service_node.hpp"
 #include "manymove_cpp_trees/move.hpp"
 #include "manymove_cpp_trees/object.hpp"
@@ -93,5 +99,44 @@ using manymove_cpp_trees::buildCopyPoseXML;
 using manymove_cpp_trees::buildCheckPoseDistanceXML;
 using manymove_cpp_trees::mainTreeWrapperXML;
 using manymove_cpp_trees::registerAllNodeTypes;
+
+namespace manymove_cpp_trees
+{
+
+// Construct a process-wide FaultReporter and stash it on the blackboard so
+// every FaultReporting-equipped BT node can fetch it in its constructor.
+// Call this once per bt_client_*.cpp main(), right after the canonical
+// `blackboard->set("node", node)` line.
+//
+// source_id defaults to the node's fully-qualified name, which matches the
+// SOVD apps[].ros_binding linkage used by the medkit gateway.
+//
+// service_name lets callers remap the FaultManager service for namespaced
+// test rigs or multi-robot setups (e.g. "/robot1/fault_manager/report_fault").
+//
+// When the package is built with MANYMOVE_WITH_MEDKIT=OFF this is a no-op
+// kept for source compatibility: bt_client_*.cpp main() can call it
+// unconditionally and the FaultReporting mixin in every action node still
+// compiles, with reportFault()/reportFaultPassed() folding to no-ops.
+#ifdef MANYMOVE_WITH_MEDKIT
+inline void installFaultReporter(
+  BT::Blackboard::Ptr blackboard, rclcpp::Node::SharedPtr node,
+  const std::string & service_name = "/fault_manager/report_fault")
+{
+  auto reporter = std::make_shared<ros2_medkit_fault_reporter::FaultReporter>(
+    node, node->get_fully_qualified_name(), service_name);
+  blackboard->set(manymove_cpp_trees::kFaultReporterBlackboardKey, reporter);
+}
+#else
+inline void installFaultReporter(
+  BT::Blackboard::Ptr /*blackboard*/, rclcpp::Node::SharedPtr /*node*/,
+  const std::string & /*service_name*/ = "/fault_manager/report_fault")
+{
+}
+#endif
+
+}  // namespace manymove_cpp_trees
+
+using manymove_cpp_trees::installFaultReporter;
 
 #endif  // MANYMOVE_CPP_TREES__MAIN_IMPORTS_HELPER_HPP_

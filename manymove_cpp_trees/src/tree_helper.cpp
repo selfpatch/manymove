@@ -167,7 +167,7 @@ std::string buildMoveXML(
     // Check that the move's robot prefix is compatible
     if (!move.robot_prefix.empty() && (move.robot_prefix != robot_prefix)) {
       RCLCPP_ERROR(
-        rclcpp::get_logger("bt_client_node"),
+        rclcpp::get_logger("manymove_cpp_trees.tree_helper"),
         "buildMoveXML: Move has prefix=%s, but user gave robot_prefix=%s: INVALID MOVE.",
         move.robot_prefix.c_str(), robot_prefix.c_str());
       return "<INVALID TREE: MISMATCHING ROBOT PREFIX>";
@@ -179,7 +179,7 @@ std::string buildMoveXML(
     blackboard->set(
       "trajectory_" + std::to_string(this_move_id), trajectory_msgs::msg::JointTrajectory());
 
-    RCLCPP_INFO(rclcpp::get_logger("bt_client_node"), "BB set: %s", key.c_str());
+    RCLCPP_INFO(rclcpp::get_logger("manymove_cpp_trees.tree_helper"), "BB set: %s", key.c_str());
 
     // Build a RetryPauseAbort node that wraps a single MoveManipulatorAction.
     // This node is expected to either execute an existing trajectory or trigger a re–plan.

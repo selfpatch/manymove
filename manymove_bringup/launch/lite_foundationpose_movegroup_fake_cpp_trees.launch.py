@@ -362,13 +362,13 @@ def launch_setup(context, *args, **kwargs):
         arguments=[
             '--ros-args',
             '--log-level',
-            'bt_client_node:=' + log_level.perform(context),
+            'bt_client_foundationpose:=' + log_level.perform(context),
             '--log-level',
             'rcl:=info',
             '--log-level',
             'rclcpp:=info',
             '--log-level',
-            'bt_client_node.rclcpp_action:=info',
+            'bt_client_foundationpose.rclcpp_action:=info',
         ],
         parameters=[
             {
@@ -506,7 +506,7 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 'log_level',
                 default_value='info',
-                description='Defines log level for bt_client_node',
+                description='Defines log level for bt_client_foundationpose',
             ),
             # OpaqueFunction to set up the node
             OpaqueFunction(function=launch_setup),

@@ -47,6 +47,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 
+#include "manymove_cpp_trees/fault_reporting.hpp"
 #include "manymove_cpp_trees/move.hpp"
 #include "manymove_msgs/action/check_robot_state.hpp"
 #include "manymove_msgs/action/get_input.hpp"
@@ -56,7 +57,7 @@
 namespace manymove_cpp_trees
 {
 
-class MoveManipulatorAction : public BT::StatefulActionNode
+class MoveManipulatorAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using MoveManipulator = manymove_msgs::action::MoveManipulator;
@@ -112,8 +113,13 @@ private:
  *
  * It takes a comma-separated list of move_ids and for each, sets 'trajectory_{id}' to empty
  * and 'validity_{id}' to false in the blackboard.
+ *
+ * NOTE: this node has no fault sites — blackboard writes do not fail in a way
+ * worth reporting. The FaultReporting base is kept so that any future failure
+ * mode (e.g. missing move_id list, malformed input) can emit through the same
+ * channel as the rest of the BT without changing the inheritance.
  */
-class ResetTrajectories : public BT::SyncActionNode
+class ResetTrajectories : public BT::SyncActionNode, public FaultReporting
 {
 public:
   /**

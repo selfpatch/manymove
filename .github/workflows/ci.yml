@@ -14,6 +14,12 @@ jobs:
       fail-fast: false
       matrix:
         ros_distro: [humble, jazzy]
+        # with_medkit: ON exercises the medkit integration path (matches
+        # selfpatch fork's primary use case); OFF guards the upstream-friendly
+        # build for users who do not want the ros2_medkit overlay.
+        with_medkit: ["ON", "OFF"]
+
+    name: build-and-test (${{ matrix.ros_distro }}, medkit=${{ matrix.with_medkit }})
 
     container:
       image: ros:${{ matrix.ros_distro }}-ros-base
@@ -26,6 +32,10 @@ jobs:
       CCACHE_BASEDIR: /tmp/ros_ws
       CCACHE_COMPRESS: "1"
       CCACHE_MAXSIZE: 5G
+      # Pin medkit to the rosdistro-released version so an upstream bump
+      # does not silently break this CI. Update deliberately when bumping.
+      MEDKIT_VERSION: "0.4.0-1"
+      MANYMOVE_WITH_MEDKIT: ${{ matrix.with_medkit == 'ON' && '1' || '0' }}
 
     steps:
       - name: Checkout repository
@@ -36,8 +46,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /root/.ccache
-          key: ccache-${{ matrix.ros_distro }}-${{ runner.os }}-v1
+          key: ccache-${{ matrix.ros_distro }}-medkit-${{ matrix.with_medkit }}-${{ runner.os }}-v1
           restore-keys: |
+            ccache-${{ matrix.ros_distro }}-medkit-${{ matrix.with_medkit }}-
             ccache-${{ matrix.ros_distro }}-
 
       - name: Add Isaac ROS apt repository (Jazzy)
@@ -54,6 +65,17 @@ jobs:
           echo "deb [signed-by=/usr/share/keyrings/isaac-ros-archive-keyring.gpg] https://isaac.download.nvidia.com/isaac-ros/release-4 ${VERSION_CODENAME} main" \
             > /etc/apt/sources.list.d/isaac-ros.list
           apt-get update
+
+      - name: Install medkit debs
+        if: matrix.with_medkit == 'ON'
+        run: |
+          set -e
+          apt-get update
+          apt-get install -y \
+            ros-$ROS_DISTRO-ros2-medkit-fault-reporter=$MEDKIT_VERSION* \
+            ros-$ROS_DISTRO-ros2-medkit-msgs=$MEDKIT_VERSION* \
+            ros-$ROS_DISTRO-ros2-medkit-fault-manager=$MEDKIT_VERSION* \
+            ros-$ROS_DISTRO-ros2-medkit-cmake=$MEDKIT_VERSION*
 
       - name: Install build tooling
         run: |
@@ -114,7 +136,8 @@ jobs:
             --event-handlers console_cohesion+ \
             --cmake-args \
               -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+              -DMANYMOVE_WITH_MEDKIT=${{ matrix.with_medkit }}
           # Show ccache status after build
           ccache -s || true
 

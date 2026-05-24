@@ -33,6 +33,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "manymove_cpp_trees/fault_codes.hpp"
 #include "manymove_cpp_trees/hmi_utils.hpp"
 
 namespace manymove_cpp_trees
@@ -41,6 +42,7 @@ namespace manymove_cpp_trees
 MoveManipulatorAction::MoveManipulatorAction(
   const std::string & name, const BT::NodeConfiguration & config)
 : BT::StatefulActionNode(name, config),
+  FaultReporting(config.blackboard),
   goal_sent_(false),
   result_received_(false),
   max_tries_(-1),
@@ -105,8 +107,15 @@ BT::NodeStatus MoveManipulatorAction::onStart()
     config().blackboard->set(robot_prefix_ + "collision_detected", false);
     config().blackboard->set(robot_prefix_ + "stop_execution", true);
 
+    reportFault(
+      fault_codes::kPlannerCollisionDetected, kSeverityError,
+      "collision detected on " + robot_prefix_ + " before motion start");
     return BT::NodeStatus::FAILURE;
   }
+  // Heal any prior CONFIRMED collision once the flag has been cleared.
+  // Without this, the fault lingers in FaultManager after the operator /
+  // recovery cleared the underlying condition on hardware.
+  reportFaultPassed(fault_codes::kPlannerCollisionDetected);
 
   // Read move_id.
   if (!getInput<std::string>("move_id", move_id_)) {
@@ -128,8 +137,14 @@ BT::NodeStatus MoveManipulatorAction::onStart()
     // HMI message
     setHMIMessage(config().blackboard, robot_prefix_, "WAITING FOR EXECUTION START", "yellow");
 
+    reportFault(
+      fault_codes::kPlannerEstopTriggered, kSeverityCritical,
+      "stop_execution flag set on " + robot_prefix_ + " before motion start");
     return BT::NodeStatus::FAILURE;
   }
+  // Heal any prior CONFIRMED e-stop once the flag has been cleared by the
+  // operator. Without this, the CRITICAL fault lingers after release.
+  reportFaultPassed(fault_codes::kPlannerEstopTriggered);
 
   return BT::NodeStatus::RUNNING;
 }
@@ -219,11 +234,25 @@ BT::NodeStatus MoveManipulatorAction::onRunning()
       setHMIMessage(config().blackboard, robot_prefix_, "", "grey");
 
       RCLCPP_INFO(node_->get_logger(), "[MoveManipulatorAction] success => returning SUCCESS");
+      // Heal the per-attempt soft fault only when a retry actually occurred.
+      // On first-attempt success current_try_ is still 0 — no FAILED was
+      // ever emitted, and a stray PASSED biases
+      // LocalFilter::should_forward_passed in the medkit reporter.
+      if (current_try_ > 0) {
+        reportFaultPassed(fault_codes::kPlannerRetryAttempt);
+      }
       return BT::NodeStatus::SUCCESS;
     } else {
       config().blackboard->set("trajectory_" + move_id_, trajectory_msgs::msg::JointTrajectory());
 
       current_try_++;
+
+      // Every failed attempt is a soft fault; medkit's LocalFilter throttles
+      // these locally and only forwards to FaultManager once the threshold is
+      // crossed within its window.
+      reportFault(
+        fault_codes::kPlannerRetryAttempt, kSeverityWarn,
+        "attempt " + std::to_string(current_try_) + " failed: " + action_result_.message);
 
       if (max_tries_ != -1 && current_try_ >= max_tries_) {
         RCLCPP_ERROR(
@@ -238,6 +267,10 @@ BT::NodeStatus MoveManipulatorAction::onRunning()
         setHMIMessage(
           config().blackboard, robot_prefix_, "MOTION FAILED: " + action_result_.message, "red");
 
+        reportFault(
+          fault_codes::kPlannerRetriesExhausted, kSeverityError,
+          "motion failed after " + std::to_string(current_try_) +
+          " attempts: " + action_result_.message);
         return BT::NodeStatus::FAILURE;
       } else {
         RCLCPP_ERROR(
@@ -270,6 +303,14 @@ void MoveManipulatorAction::onHalted()
 
   // HMI message
   setHMIMessage(config().blackboard, robot_prefix_, "MOTION HALTED", "red");
+
+  // Heal the per-attempt soft fault on halt, mirroring WaitForInputAction::
+  // onHalted and WaitForObjectAction::onHalted. Without this, a halted
+  // retry loop leaves a lingering kPlannerRetryAttempt soft fault in
+  // FaultManager until the next successful attempt.
+  if (current_try_ > 0) {
+    reportFaultPassed(fault_codes::kPlannerRetryAttempt);
+  }
 }
 
 void MoveManipulatorAction::goalResponseCallback(
@@ -330,7 +371,7 @@ void MoveManipulatorAction::feedbackCallback(
 }
 
 ResetTrajectories::ResetTrajectories(const std::string & name, const BT::NodeConfiguration & config)
-: BT::SyncActionNode(name, config)
+: BT::SyncActionNode(name, config), FaultReporting(config.blackboard)
 {
   // Obtain the ROS node from the blackboard
   if (!config.blackboard) {

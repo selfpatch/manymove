@@ -31,6 +31,7 @@
 #include <chrono>
 
 #include "behaviortree_cpp_v3/behavior_tree.h"
+#include "manymove_cpp_trees/fault_codes.hpp"
 
 using namespace std::chrono_literals;
 
@@ -42,7 +43,7 @@ namespace manymove_cpp_trees
 // -------------------------------------------------
 GripperCommandAction::GripperCommandAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config),
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard),
   goal_sent_(false),
   result_received_(false),
   server_ready_(false),
@@ -100,6 +101,9 @@ BT::NodeStatus GripperCommandAction::onRunning()
           "GripperCommandAction: timed out waiting for action server '%s'.",
           action_server_name_.c_str());
         waiting_for_server_ = false;
+        reportFault(
+          fault_codes::kGripperCommandFailed, kSeverityError,
+          "GripperCommand server '" + action_server_name_ + "' not available");
         return BT::NodeStatus::FAILURE;
       }
 
@@ -152,8 +156,14 @@ BT::NodeStatus GripperCommandAction::onRunning()
   double pos = action_result_.position;
   setOutput("current_position", pos);
 
-  // Return SUCCESS if truly reached the goal, else FAILURE
-  return success ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
+  if (success) {
+    return BT::NodeStatus::SUCCESS;
+  }
+  reportFault(
+    fault_codes::kGripperCommandFailed, kSeverityError,
+    "GripperCommand goal not reached (reached_goal=false, stalled=false), final position=" +
+    std::to_string(pos));
+  return BT::NodeStatus::FAILURE;
 }
 
 void GripperCommandAction::onHalted()
@@ -201,7 +211,8 @@ void GripperCommandAction::feedbackCallback(
 // -------------------------------------------------
 
 GripperTrajAction::GripperTrajAction(const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), goal_sent_(false), result_received_(false), success_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false),
+  result_received_(false), success_(false)
 {
   // Grab the node handle from blackboard
   if (!config.blackboard) {
@@ -226,6 +237,9 @@ BT::NodeStatus GripperTrajAction::onStart()
   // Wait a few seconds for the action server
   if (!action_client_->wait_for_action_server(5s)) {
     RCLCPP_ERROR(node_->get_logger(), "GripperTrajAction: server not available!");
+    reportFault(
+      fault_codes::kGripperTrajFailed, kSeverityError,
+      "GripperTraj action server not available within 5s");
     return BT::NodeStatus::FAILURE;
   }
 
@@ -270,15 +284,23 @@ BT::NodeStatus GripperTrajAction::onStart()
 BT::NodeStatus GripperTrajAction::onRunning()
 {
   if (!goal_sent_) {
-    return BT::NodeStatus::FAILURE;
+    // onRunning reached before onStart actually dispatched a goal: BT
+    // framework misuse, not an operational fault (per the
+    // programmer-error-throws / operational-fault-reports policy).
+    throw BT::RuntimeError("GripperTrajAction::onRunning called before goal was sent");
   }
 
   if (!result_received_) {
     return BT::NodeStatus::RUNNING;
   }
 
-  // If result was received, return SUCCESS if success_ is true, else FAILURE
-  return success_ ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
+  if (success_) {
+    return BT::NodeStatus::SUCCESS;
+  }
+  reportFault(
+    fault_codes::kGripperTrajFailed, kSeverityError,
+    "GripperTraj trajectory execution failed (action result code != SUCCEEDED)");
+  return BT::NodeStatus::FAILURE;
 }
 
 void GripperTrajAction::onHalted()
@@ -318,7 +340,7 @@ void GripperTrajAction::resultCallback(
 
 PublishJointStateAction::PublishJointStateAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::SyncActionNode(name, config)
+: BT::SyncActionNode(name, config), FaultReporting(config.blackboard)
 {
   if (!config.blackboard || !config.blackboard->get("node", node_)) {
     throw BT::RuntimeError("PublishJointStateAction: 'node' not found in blackboard.");

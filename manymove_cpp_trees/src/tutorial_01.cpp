@@ -36,12 +36,13 @@ int main(int argc, char ** argv)
 
   rclcpp::init(argc, argv);
 
-  auto node = rclcpp::Node::make_shared("bt_client_node");
+  auto node = rclcpp::Node::make_shared("tutorial_01");
   RCLCPP_INFO(node->get_logger(), "BT Client Node started (Purely Programmatic XML).");
 
   // Create a blackboard and set "node"
   auto blackboard = BT::Blackboard::create();
   blackboard->set("node", node);
+  installFaultReporter(blackboard, node);
   RCLCPP_INFO(node->get_logger(), "Blackboard: set('node', <rclcpp::Node>)");
 
   // Create the keys variable for HMI

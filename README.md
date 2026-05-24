@@ -7,6 +7,17 @@
 
 ![ManyMove structure](media/manymove_example.gif)
 
+> **Selfpatch fork.** This repository is a fork of
+> [`pastoriomarco/manymove`](https://github.com/pastoriomarco/manymove)
+> instrumented with [`ros2_medkit_fault_reporter`](https://github.com/selfpatch/ros2_medkit)
+> so BT action node failures (collision, retry, robot-not-ready, IO/TF errors,
+> wait timeouts) are forwarded to the medkit `FaultManager` for diagnosis.
+> The medkit packages are a hard build-time dependency on this branch; install
+> them via apt (`ros-jazzy-ros2-medkit-fault-reporter`,
+> `ros-jazzy-ros2-medkit-msgs`) or build from source. See
+> [`docs/FAULT_CODES.md`](docs/FAULT_CODES.md) for the catalogue of emitted
+> codes.
+
 ## DISCLAIMER
 
 This software is released under the BSD-3-Clause license (see `LICENSE` for details).

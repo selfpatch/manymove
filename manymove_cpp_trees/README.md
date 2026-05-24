@@ -42,6 +42,21 @@ Each executable spins the BT factory, registers the custom nodes, and runs the `
 - Control and runtime messaging: `rclcpp`, `rclcpp_action`, `control_msgs`, `std_msgs`, `std_srvs`, `topic_based_ros2_control`
 - Simulation and perception bridges: `simulation_interfaces`, `vision_msgs`
 
+## Optional: ros2_medkit fault reporting
+The package can emit structured fault events via
+[`ros2_medkit`](https://github.com/selfpatch/ros2_medkit) when built with
+`MANYMOVE_WITH_MEDKIT=ON`. With the option OFF (default) the action nodes
+build with no extra dependencies and every `reportFault()` call compiles
+to a no-op. To enable:
+
+```bash
+export MANYMOVE_WITH_MEDKIT=1                                # for rosdep
+rosdep install --from-paths src --ignore-src -y
+colcon build --cmake-args -DMANYMOVE_WITH_MEDKIT=ON          # for the build
+```
+
+See [`docs/FAULT_CODES.md`](../docs/FAULT_CODES.md) for the catalogue.
+
 ## Notes
 - Robot safety mechanisms (stop buttons, workspace supervision) must be handled externally.
 - Review the main README for project-wide disclaimers, contribution guidance, and licensing details.

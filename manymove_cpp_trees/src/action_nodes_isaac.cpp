@@ -44,6 +44,7 @@
 #include <std_msgs/msg/header.hpp>
 
 #include "manymove_cpp_trees/bt_converters.hpp"
+#include "manymove_cpp_trees/fault_codes.hpp"
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
@@ -60,7 +61,7 @@ namespace manymove_cpp_trees
 // GetEntityPoseNode
 // ======================================================================
 GetEntityPoseNode::GetEntityPoseNode(const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard)
 {
   if (!config.blackboard || !config.blackboard->get("node", node_) || !node_) {
     throw BT::RuntimeError("GetEntityPoseNode: missing 'node' in blackboard");
@@ -162,7 +163,7 @@ void GetEntityPoseNode::onHalted()
 // SetEntityPoseNode
 // ======================================================================
 SetEntityPoseNode::SetEntityPoseNode(const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard)
 {
   if (!config.blackboard || !config.blackboard->get("node", node_) || !node_) {
     throw BT::RuntimeError("SetEntityPoseNode: missing 'node' in blackboard");
@@ -392,7 +393,7 @@ geometry_msgs::msg::Pose align_foundationpose_orientation(
 
 FoundationPoseAlignmentNode::FoundationPoseAlignmentNode(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard)
 {
   if (!config.blackboard || !config.blackboard->get("node", node_) || !node_) {
     throw BT::RuntimeError("FoundationPoseAlignmentNode: missing 'node' in blackboard");
@@ -535,6 +536,10 @@ BT::NodeStatus FoundationPoseAlignmentNode::onRunning()
         RCLCPP_WARN(
           node_->get_logger(), "[%s] Timed out waiting for detections on '%s'", name().c_str(),
           topic_snapshot.c_str());
+        reportFault(
+          fault_codes::kIsaacFoundationPoseFailed, kSeverityError,
+          "FoundationPose: no detection messages received on '" + topic_snapshot +
+          "' within " + std::to_string(timeout_seconds_) + "s");
         return BT::NodeStatus::FAILURE;
       }
     }
@@ -555,6 +560,11 @@ BT::NodeStatus FoundationPoseAlignmentNode::onRunning()
           node_->get_logger(),
           "[%s] Timed out waiting for a valid detection (target_id='%s', min_score=%.3f)",
           name().c_str(), target_id_.c_str(), minimum_score_);
+        reportFault(
+          fault_codes::kIsaacFoundationPoseFailed, kSeverityError,
+          "FoundationPose: no detection passed filters (target_id='" + target_id_ +
+          "', min_score=" + std::to_string(minimum_score_) + ") within " +
+          std::to_string(timeout_seconds_) + "s");
         return BT::NodeStatus::FAILURE;
       }
     }
@@ -598,6 +608,10 @@ BT::NodeStatus FoundationPoseAlignmentNode::onRunning()
         RCLCPP_ERROR(
           node_->get_logger(), "[%s] Timed out waiting for TF transform to '%s'", name().c_str(),
           alignment_frame.c_str());
+        reportFault(
+          fault_codes::kIsaacFoundationPoseFailed, kSeverityError,
+          "FoundationPose: TF transform to '" + alignment_frame +
+          "' timed out after " + std::to_string(timeout_seconds_) + "s");
         return BT::NodeStatus::FAILURE;
       }
     }
@@ -636,6 +650,10 @@ BT::NodeStatus FoundationPoseAlignmentNode::onRunning()
           RCLCPP_ERROR(
             node_->get_logger(), "[%s] Timed out waiting for TF transform to '%s'", name().c_str(),
             planning_frame_.c_str());
+          reportFault(
+            fault_codes::kIsaacFoundationPoseFailed, kSeverityError,
+            "FoundationPose: TF transform to planning frame '" + planning_frame_ +
+            "' timed out after " + std::to_string(timeout_seconds_) + "s");
           return BT::NodeStatus::FAILURE;
         }
       }

@@ -43,13 +43,15 @@
 
 #include "control_msgs/action/gripper_command.hpp"
 
+#include "manymove_cpp_trees/fault_reporting.hpp"
+
 namespace manymove_cpp_trees
 {
 // =======================================================
 // GripperCommandAction
 // =======================================================
 
-class GripperCommandAction : public BT::StatefulActionNode
+class GripperCommandAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using GripperCommand = control_msgs::action::GripperCommand;
@@ -97,7 +99,7 @@ private:
 // =======================================================
 // GripperTrajAction
 // =======================================================
-class GripperTrajAction : public BT::StatefulActionNode
+class GripperTrajAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using FollowJointTrajectory = control_msgs::action::FollowJointTrajectory;
@@ -134,7 +136,12 @@ private:
 // PublishJointStateAction
 // =======================================================
 
-class PublishJointStateAction : public BT::SyncActionNode
+// NOTE: this node currently has no fault sites — the call is fire-and-forget
+// via the publisher API and cannot fail in a way worth reporting. The
+// FaultReporting base is kept so that any future failure mode (e.g. detection
+// of a downstream subscriber drop) can emit through the same channel as the
+// rest of the BT without changing the inheritance.
+class PublishJointStateAction : public BT::SyncActionNode, public FaultReporting
 {
 public:
   PublishJointStateAction(const std::string & name, const BT::NodeConfiguration & config);

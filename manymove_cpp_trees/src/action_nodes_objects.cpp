@@ -33,6 +33,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "manymove_cpp_trees/fault_codes.hpp"
 #include "manymove_cpp_trees/hmi_utils.hpp"
 
 namespace manymove_cpp_trees
@@ -41,7 +42,8 @@ namespace manymove_cpp_trees
 
 AddCollisionObjectAction::AddCollisionObjectAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false),
+  result_received_(false)
 {
   static constexpr const char * kName = "AddCollisionObjectAction";
 
@@ -161,6 +163,9 @@ BT::NodeStatus AddCollisionObjectAction::onRunning()
       RCLCPP_ERROR(
         node_->get_logger(), "%s: Failed to add object '%s'. Message: %s",
         kName, object_id_.c_str(), action_result_.message.c_str());
+      reportFault(
+        fault_codes::kObjectAddFailed, kSeverityError,
+        "add collision object '" + object_id_ + "' failed: " + action_result_.message);
       return BT::NodeStatus::FAILURE;
     }
   }
@@ -234,7 +239,8 @@ void AddCollisionObjectAction::resultCallback(
 
 RemoveCollisionObjectAction::RemoveCollisionObjectAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false),
+  result_received_(false)
 {
   static constexpr const char * kName = "RemoveCollisionObjectAction";
 
@@ -313,6 +319,9 @@ BT::NodeStatus RemoveCollisionObjectAction::onRunning()
         node_->get_logger(),
         "%s: Failed to remove object '%s'. Message: %s",
         kName, object_id_.c_str(), action_result_.message.c_str());
+      reportFault(
+        fault_codes::kObjectRemoveFailed, kSeverityError,
+        "remove collision object '" + object_id_ + "' failed: " + action_result_.message);
       return BT::NodeStatus::FAILURE;
     }
   }
@@ -388,7 +397,7 @@ void RemoveCollisionObjectAction::resultCallback(
 
 AttachDetachObjectAction::AttachDetachObjectAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config),
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard),
   goal_sent_(false),
   result_received_(false),
   attach_(true)  // Default to attach
@@ -495,6 +504,10 @@ BT::NodeStatus AttachDetachObjectAction::onRunning()
         "%s: Failed to %s object '%s' to link '%s'. Message: %s",
         kName, action.c_str(), object_id_.c_str(), link_name_.c_str(),
         action_result_.message.c_str());
+      reportFault(
+        fault_codes::kObjectAttachFailed, kSeverityError,
+        action + " object '" + object_id_ + "' to link '" + link_name_ + "' failed: " +
+        action_result_.message);
       return BT::NodeStatus::FAILURE;
     }
   }
@@ -569,7 +582,8 @@ void AttachDetachObjectAction::resultCallback(
 
 CheckObjectExistsAction::CheckObjectExistsAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false),
+  result_received_(false)
 {
   static constexpr const char * kName = "CheckObjectExistsAction";
 
@@ -723,7 +737,8 @@ void CheckObjectExistsAction::resultCallback(
 
 GetObjectPoseAction::GetObjectPoseAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false),
+  result_received_(false)
 {
   static constexpr const char * kName = "GetObjectPoseAction";
 
@@ -872,6 +887,9 @@ BT::NodeStatus GetObjectPoseAction::onRunning()
         node_->get_logger(),
         "%s: Failed to retrieve pose for object '%s'. Message: %s",
         kName, object_id_.c_str(), action_result_.message.c_str());
+      reportFault(
+        fault_codes::kObjectGetPoseFailed, kSeverityError,
+        "GetObjectPose '" + object_id_ + "' failed: " + action_result_.message);
       return BT::NodeStatus::FAILURE;
     }
   }
@@ -940,7 +958,7 @@ void GetObjectPoseAction::resultCallback(
 
 WaitForObjectAction::WaitForObjectAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config),
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard),
   goal_sent_(false),
   result_received_(false),
   last_exists_(false),
@@ -1037,6 +1055,8 @@ BT::NodeStatus WaitForObjectAction::onRunning()
         node_->get_logger(),
         "%s: Condition met: object '%s' => exists=%s -> SUCCESS.",
         kName, object_id_.c_str(), (last_exists_ ? "true" : "false"));
+      // Pair: clear timeout filter once the wait condition is met.
+      reportFaultPassed(fault_codes::kObjectWaitTimeout);
       return BT::NodeStatus::SUCCESS;
     }
 
@@ -1052,6 +1072,10 @@ BT::NodeStatus WaitForObjectAction::onRunning()
           node_->get_logger(),
           "%s: Timeout (%.1f s) reached for object '%s' -> FAILURE.",
           kName, timeout_, object_id_.c_str());
+        reportFault(
+          fault_codes::kObjectWaitTimeout, kSeverityWarn,
+          "WaitForObject '" + object_id_ + "' timed out after " +
+          std::to_string(timeout_) + "s");
         return BT::NodeStatus::FAILURE;
       }
     }
@@ -1094,6 +1118,11 @@ void WaitForObjectAction::onHalted()
     action_client_->async_cancel_all_goals();
     RCLCPP_INFO(node_->get_logger(), "%s: Goal canceled.", kName);
   }
+
+  // Heal a previously raised wait-timeout: when the subtree is halted
+  // mid-wait, the timeout condition no longer holds. Without this,
+  // any earlier `kObjectWaitTimeout` would linger in FaultManager.
+  reportFaultPassed(fault_codes::kObjectWaitTimeout);
 
   goal_sent_ = false;
   result_received_ = false;

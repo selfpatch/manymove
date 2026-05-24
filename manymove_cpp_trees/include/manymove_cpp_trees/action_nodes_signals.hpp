@@ -39,6 +39,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 
+#include "manymove_cpp_trees/fault_reporting.hpp"
 #include "manymove_cpp_trees/move.hpp"
 #include "manymove_msgs/action/add_collision_object.hpp"
 #include "manymove_msgs/action/attach_detach_object.hpp"
@@ -59,7 +60,7 @@ namespace manymove_cpp_trees
  * @class SetOutputAction
  * @brief Sends a goal to the "set_output" action server (manymove_msgs::action::SetOutput).
  */
-class SetOutputAction : public BT::StatefulActionNode
+class SetOutputAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using SetOutput = manymove_msgs::action::SetOutput;
@@ -106,7 +107,7 @@ private:
  * @class GetInputAction
  * @brief Reads a digital input from "get_input" action server (manymove_msgs::action::GetInput).
  */
-class GetInputAction : public BT::StatefulActionNode
+class GetInputAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using GetInput = manymove_msgs::action::GetInput;
@@ -152,7 +153,7 @@ private:
  * @class CheckRobotStateAction
  * @brief Check the robot's current state from "check_robot_state" action.
  */
-class CheckRobotStateAction : public BT::StatefulActionNode
+class CheckRobotStateAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using CheckRobotState = manymove_msgs::action::CheckRobotState;
@@ -194,7 +195,7 @@ private:
  * @class ResetRobotStateAction
  * @brief Send a goal to "reset_robot_state" (manymove_msgs::action::ResetRobotState).
  */
-class ResetRobotStateAction : public BT::StatefulActionNode
+class ResetRobotStateAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using ResetRobotState = manymove_msgs::action::ResetRobotState;
@@ -247,6 +248,14 @@ private:
   bool reset_goal_sent_;
   bool load_goal_sent_;
 
+  // One failed reset can fan out across rejection + result-failure callbacks
+  // for unload-trajectory, reset-robot-state and load-trajectory (up to 6
+  // call sites). Without coalescing, those would all emit
+  // kRobotResetFailed at kSeverityError (>= bypass_severity), driving the
+  // AUTOSAR-DEM debounce counter past confirmation_threshold on a single
+  // logical incident. Latch on first emission per run; reset in onStart.
+  bool fault_reported_;
+
   std::string computed_controller_name_;
 
   ResetRobotState::Result action_result_;
@@ -257,7 +266,7 @@ private:
  * @brief Repeatedly calls the "get_input" action server to read a digital input
  *        and checks if the read value == desired_value. ...
  */
-class WaitForInputAction : public BT::StatefulActionNode
+class WaitForInputAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   WaitForInputAction(const std::string & name, const BT::NodeConfiguration & config);
@@ -312,6 +321,12 @@ private:
   // last read from the server
   bool last_success_;
   int last_value_;
+
+  // Track whether kSignalWaitInputTimeout was actually emitted this run so
+  // onHalted only fires reportFaultPassed when a FAILED preceded it.
+  // Without this, every halt accumulated a spurious PASSED, which biases
+  // LocalFilter::should_forward_passed counters in the medkit reporter.
+  bool timeout_reported_;
 };
 
 }  // namespace manymove_cpp_trees

@@ -32,7 +32,7 @@ int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
 
-  auto node = rclcpp::Node::make_shared("bt_client_node");
+  auto node = rclcpp::Node::make_shared("bt_client_ur");
   RCLCPP_INFO(node->get_logger(), "BT Client Node with SignalColor started for UR.");
 
   // ----------------------------------------------------------------------------
@@ -41,6 +41,7 @@ int main(int argc, char ** argv)
 
   auto blackboard = BT::Blackboard::create();
   blackboard->set("node", node);
+  installFaultReporter(blackboard, node);
   RCLCPP_INFO(node->get_logger(), "Blackboard: set('node', <rclcpp::Node>)");
 
   std::vector<manymove_cpp_trees::BlackboardEntry> keys;

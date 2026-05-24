@@ -33,6 +33,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "manymove_cpp_trees/fault_codes.hpp"
 #include "manymove_cpp_trees/hmi_utils.hpp"
 
 namespace manymove_cpp_trees
@@ -43,7 +44,8 @@ namespace manymove_cpp_trees
 // ------------------------------------------------------------------
 
 SetOutputAction::SetOutputAction(const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false),
+  result_received_(false)
 {
   // Obtain the ROS node from the blackboard
   if (!config.blackboard) {
@@ -143,6 +145,10 @@ BT::NodeStatus SetOutputAction::onRunning()
       config().blackboard, prefix_,
       "SETTING OUTPUT " + std::to_string(ionum_) + " OF " + io_type_ + " FAILED!", "red");
 
+    reportFault(
+      fault_codes::kSignalSetOutputFailed, kSeverityError,
+      "SetOutput " + io_type_ + "[" + std::to_string(ionum_) + "] failed: " +
+      action_result_.message);
     return BT::NodeStatus::FAILURE;
   }
 }
@@ -189,7 +195,8 @@ void SetOutputAction::resultCallback(const GoalHandleSetOutput::WrappedResult & 
 // ------------------------------------------------------------------
 
 GetInputAction::GetInputAction(const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false),
+  result_received_(false)
 {
   if (!config.blackboard) {
     throw BT::RuntimeError("GetInputAction: no blackboard provided.");
@@ -285,6 +292,10 @@ BT::NodeStatus GetInputAction::onRunning()
       config().blackboard, prefix_,
       "READING INPUT " + std::to_string(ionum_) + " OF " + io_type_ + " FAILED!", "green");
 
+    reportFault(
+      fault_codes::kSignalGetInputFailed, kSeverityError,
+      "GetInput " + io_type_ + "[" + std::to_string(ionum_) + "] failed: " +
+      action_result_.message);
     return BT::NodeStatus::FAILURE;
   }
 }
@@ -329,7 +340,8 @@ void GetInputAction::resultCallback(const GoalHandleGetInput::WrappedResult & wr
 
 CheckRobotStateAction::CheckRobotStateAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config), goal_sent_(false), result_received_(false)
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard), goal_sent_(false),
+  result_received_(false)
 {
   // Retrieve the ROS node from the blackboard
   if (!config.blackboard) {
@@ -401,6 +413,8 @@ BT::NodeStatus CheckRobotStateAction::onRunning()
     RCLCPP_INFO(
       node_->get_logger(), "CheckRobotStateAction [%s]: Robot is READY. (mode=%d, state=%d)",
       name().c_str(), action_result_.mode, action_result_.state);
+    // Pair: clear NOT_READY filter once robot recovers.
+    reportFaultPassed(fault_codes::kRobotNotReady);
     return BT::NodeStatus::SUCCESS;
   } else {
     RCLCPP_WARN(
@@ -408,6 +422,12 @@ BT::NodeStatus CheckRobotStateAction::onRunning()
       "CheckRobotStateAction [%s]: Robot is NOT ready => err=%d, mode=%d, state=%d. Msg=%s",
       name().c_str(), action_result_.err, action_result_.mode, action_result_.state,
       action_result_.message.c_str());
+    reportFault(
+      fault_codes::kRobotNotReady, kSeverityCritical,
+      "robot not ready: err=" + std::to_string(action_result_.err) +
+      ", mode=" + std::to_string(action_result_.mode) +
+      ", state=" + std::to_string(action_result_.state) +
+      ", msg=" + action_result_.message);
     return BT::NodeStatus::FAILURE;
   }
 }
@@ -464,11 +484,15 @@ void CheckRobotStateAction::resultCallback(
 
 ResetRobotStateAction::ResetRobotStateAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config),
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard),
   goal_sent_(false),
   result_received_(false),
   unload_traj_success_(false),
-  load_traj_success_(false)
+  load_traj_success_(false),
+  unload_goal_sent_(false),
+  reset_goal_sent_(false),
+  load_goal_sent_(false),
+  fault_reported_(false)
 {
   if (!config.blackboard) {
     throw BT::RuntimeError("ResetRobotStateAction: no blackboard provided.");
@@ -533,6 +557,7 @@ BT::NodeStatus ResetRobotStateAction::onStart()
   unload_goal_sent_ = false;
   reset_goal_sent_ = false;
   load_goal_sent_ = false;
+  fault_reported_ = false;
 
   // Step 1: Call UnloadTrajController action
   UnloadTrajController::Goal unload_traj_goal;
@@ -637,6 +662,13 @@ void ResetRobotStateAction::goalResponseCallback(
       name().c_str());
     action_result_.success = false;
     result_received_ = true;
+    if (!fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: reset_robot_state goal rejected by server");
+    }
   } else {
     RCLCPP_INFO(
       node_->get_logger(), "ResetRobotStateAction [%s]: ResetRobotState Goal ACCEPTED by server.",
@@ -652,6 +684,13 @@ void ResetRobotStateAction::resultCallback(
   } else {
     action_result_.success = false;
     action_result_.message = "ResetRobotState aborted or failed";
+    if (!fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: reset_robot_state action aborted or failed");
+    }
   }
   result_received_ = true;
 }
@@ -664,6 +703,13 @@ void ResetRobotStateAction::goalResponseCallbackUnloadTraj(
       node_->get_logger(),
       "ResetRobotStateAction [%s]: UnloadTrajController Goal REJECTED by server.", name().c_str());
     unload_traj_success_ = false;
+    if (!fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: unload_trajectory_controller goal rejected by server");
+    }
   } else {
     RCLCPP_INFO(
       node_->get_logger(),
@@ -676,8 +722,22 @@ void ResetRobotStateAction::resultCallbackUnloadTraj(
 {
   if (wrapped_result.code == rclcpp_action::ResultCode::SUCCEEDED) {
     unload_traj_success_ = wrapped_result.result->success;
+    if (!unload_traj_success_ && !fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: unload_trajectory_controller reported success=false");
+    }
   } else {
     unload_traj_success_ = false;
+    if (!fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: unload_trajectory_controller action aborted or failed");
+    }
   }
 }
 
@@ -689,6 +749,13 @@ void ResetRobotStateAction::goalResponseCallbackLoadTraj(
       node_->get_logger(),
       "ResetRobotStateAction [%s]: LoadTrajController Goal REJECTED by server.", name().c_str());
     load_traj_success_ = false;
+    if (!fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: load_trajectory_controller goal rejected by server");
+    }
   } else {
     RCLCPP_INFO(
       node_->get_logger(),
@@ -701,18 +768,33 @@ void ResetRobotStateAction::resultCallbackLoadTraj(
 {
   if (wrapped_result.code == rclcpp_action::ResultCode::SUCCEEDED) {
     load_traj_success_ = wrapped_result.result->success;
+    if (!load_traj_success_ && !fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: load_trajectory_controller reported success=false");
+    }
   } else {
     load_traj_success_ = false;
+    if (!fault_reported_) {
+      fault_reported_ = true;
+      reportFault(
+        fault_codes::kRobotResetFailed, kSeverityError,
+        std::string("ResetRobotStateAction [") + name() +
+        "]: load_trajectory_controller action aborted or failed");
+    }
   }
 }
 
 WaitForInputAction::WaitForInputAction(
   const std::string & name, const BT::NodeConfiguration & config)
-: BT::StatefulActionNode(name, config),
+: BT::StatefulActionNode(name, config), FaultReporting(config.blackboard),
   goal_sent_(false),
   result_received_(false),
   last_success_(false),
-  last_value_(0)
+  last_value_(0),
+  timeout_reported_(false)
 {
   // Obtain the ROS2 node from the blackboard
   if (!config.blackboard) {
@@ -730,6 +812,7 @@ BT::NodeStatus WaitForInputAction::onStart()
   result_received_ = false;
   last_success_ = false;
   last_value_ = 0;
+  timeout_reported_ = false;
 
   // Read ports
   if (!getInput<std::string>("io_type", io_type_)) {
@@ -762,6 +845,9 @@ BT::NodeStatus WaitForInputAction::onStart()
       RCLCPP_ERROR(
         node_->get_logger(), "[%s] server '%s' not available.", name().c_str(),
         server_name.c_str());
+      reportFault(
+        fault_codes::kSignalGetInputFailed, kSeverityError,
+        "WaitForInput server '" + server_name + "' not available within 5s");
       return BT::NodeStatus::FAILURE;
     }
   }
@@ -804,6 +890,13 @@ BT::NodeStatus WaitForInputAction::onRunning()
         std::to_string(desired_value_),
         "green");
 
+      // Pair: only clear if we actually emitted the timeout earlier. A
+      // first-pass success has no FAILED to heal and a stray PASSED biases
+      // LocalFilter::should_forward_passed.
+      if (timeout_reported_) {
+        reportFaultPassed(fault_codes::kSignalWaitInputTimeout);
+        timeout_reported_ = false;
+      }
       return BT::NodeStatus::SUCCESS;
     }
 
@@ -819,6 +912,11 @@ BT::NodeStatus WaitForInputAction::onRunning()
           config().blackboard, prefix_,
           "WAIT INPUT " + std::to_string(ionum_) + " OF " + io_type_ + " TIMED OUT", "red");
 
+        reportFault(
+          fault_codes::kSignalWaitInputTimeout, kSeverityWarn,
+          "WaitForInput " + io_type_ + "[" + std::to_string(ionum_) + "] timed out after " +
+          std::to_string(timeout_) + "s, last_value=" + std::to_string(last_value_));
+        timeout_reported_ = true;
         return BT::NodeStatus::FAILURE;
       }
     }
@@ -847,6 +945,15 @@ void WaitForInputAction::onHalted()
   RCLCPP_WARN(node_->get_logger(), "[%s] onHalted() => cancel goal if needed", name().c_str());
   if (goal_sent_ && !result_received_) {
     action_client_->async_cancel_all_goals();
+  }
+  // Heal a previously raised wait-timeout: when the subtree is halted
+  // mid-wait, the timeout condition no longer holds. Only emit if we
+  // actually reported the FAILED earlier — otherwise the PASSED would
+  // accumulate in LocalFilter::should_forward_passed and bias subsequent
+  // healing decisions.
+  if (timeout_reported_) {
+    reportFaultPassed(fault_codes::kSignalWaitInputTimeout);
+    timeout_reported_ = false;
   }
   goal_sent_ = false;
   result_received_ = false;

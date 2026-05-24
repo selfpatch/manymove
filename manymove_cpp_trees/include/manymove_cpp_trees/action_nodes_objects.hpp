@@ -47,6 +47,7 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 
 #include "manymove_cpp_trees/bt_converters.hpp"
+#include "manymove_cpp_trees/fault_reporting.hpp"
 #include "manymove_cpp_trees/move.hpp"
 #include "manymove_msgs/action/check_robot_state.hpp"
 #include "manymove_msgs/action/get_input.hpp"
@@ -60,7 +61,7 @@ namespace manymove_cpp_trees
  * @brief A Behavior Tree node that adds a collision object to the planning scene using the
  * AddCollisionObject action server.
  */
-class AddCollisionObjectAction : public BT::StatefulActionNode
+class AddCollisionObjectAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using AddCollisionObject = manymove_msgs::action::AddCollisionObject;
@@ -128,7 +129,7 @@ private:
  * @brief A Behavior Tree node that removes a collision object from the planning scene using the
  * RemoveCollisionObject action server.
  */
-class RemoveCollisionObjectAction : public BT::StatefulActionNode
+class RemoveCollisionObjectAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using RemoveCollisionObject = manymove_msgs::action::RemoveCollisionObject;
@@ -190,7 +191,7 @@ private:
  * @brief A Behavior Tree node that attaches or detaches a collision object to/from a robot link
  * using the AttachDetachObject action server.
  */
-class AttachDetachObjectAction : public BT::StatefulActionNode
+class AttachDetachObjectAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using AttachDetachObject = manymove_msgs::action::AttachDetachObject;
@@ -260,7 +261,7 @@ private:
  * @brief A Behavior Tree node that checks if a collision object exists and whether it's attached
  * using the CheckObjectExists action server.
  */
-class CheckObjectExistsAction : public BT::StatefulActionNode
+class CheckObjectExistsAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using CheckObjectExists = manymove_msgs::action::CheckObjectExists;
@@ -327,7 +328,7 @@ private:
  * @brief A Behavior Tree node that retrieves and modifies the pose of a collision object using the
  * GetObjectPose action server.
  */
-class GetObjectPoseAction : public BT::StatefulActionNode
+class GetObjectPoseAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using GetObjectPose = manymove_msgs::action::GetObjectPose;
@@ -409,7 +410,7 @@ private:
  *  - "is_attached" (bool, output)  : Whether the object was attached.
  *  - "link_name" (string, output)  : If attached, which link.
  */
-class WaitForObjectAction : public BT::StatefulActionNode
+class WaitForObjectAction : public BT::StatefulActionNode, public FaultReporting
 {
 public:
   using CheckObjectExists = manymove_msgs::action::CheckObjectExists;
